@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NotificationService/NotificationService.csproj" />
+  <Project Path="OrderService/OrderService.csproj" />
+</Solution>

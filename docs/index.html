@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RabbitMQ Interactive Tutorial — .NET Edition</title>
+<style>
+/* ── Reset & Root ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0f1117;
+  --surface:  #1a1f2e;
+  --elevated: #252b3b;
+  --border:   #2d3748;
+  --cyan:     #00d4ff;
+  --cyan-dim: #007a94;
+  --amber:    #f59e0b;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --text:     #e2e8f0;
+  --muted:    #94a3b8;
+  --faint:    #4a5568;
+  --sidebar:  252px;
+  --r:        8px;
+  --mono:     'Cascadia Code','Fira Code','Consolas','Menlo',monospace;
+  --sans:     -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:      #f1f5f9;
+    --surface: #ffffff;
+    --elevated:#f8fafc;
+    --border:  #e2e8f0;
+    --text:    #1e293b;
+    --muted:   #64748b;
+    --faint:   #cbd5e1;
+  }
+}
+
+html { font-size: 15px; scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ── Sidebar ────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar);
+  min-width: var(--sidebar);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.sb-logo {
+  padding: 20px 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sb-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.sb-logo svg { flex-shrink: 0; }
+
+.sb-title { font-size: 1rem; font-weight: 700; color: var(--cyan); letter-spacing: -0.02em; }
+.sb-sub   { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+
+.sb-nav { flex: 1; padding: 10px 0; list-style: none; }
+
+.nav-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.81rem;
+  border-left: 3px solid transparent;
+  transition: all 0.15s ease;
+  line-height: 1.35;
+  user-select: none;
+}
+.nav-item:hover   { color: var(--text); background: rgba(0,212,255,0.04); }
+.nav-item.active  { color: var(--cyan); border-left-color: var(--cyan); background: rgba(0,212,255,0.08); font-weight: 600; }
+
+.nav-num { font-size: 0.68rem; font-family: var(--mono); color: var(--faint); min-width: 14px; padding-top: 1px; }
+.nav-item.active .nav-num { color: var(--cyan-dim); }
+
+.sb-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.glos-btn {
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(0,212,255,0.08);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: var(--r);
+  color: var(--cyan);
+  font-size: 0.81rem;
+  font-family: var(--sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+.glos-btn:hover { background: rgba(0,212,255,0.15); }
+
+/* ── Main ───────────────────────────────────────────────── */
+#main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 36px 60px;
+  overflow-x: hidden;
+}
+
+.ch-header { margin-bottom: 22px; }
+.ch-label  { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 600; margin-bottom: 6px; }
+.ch-title  { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+.ch-sub    { font-size: 0.88rem; color: var(--muted); margin-top: 6px; }
+
+/* ── Diagram area ───────────────────────────────────────── */
+#diagram-area {
+  background: var(--elevated);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+#diagram-area svg { display: block; width: 100%; }
+
+.sub-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.sub-tab {
+  padding: 10px 20px;
+  font-size: 0.81rem;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.sub-tab:hover  { color: var(--text); }
+.sub-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+/* ── Controls ───────────────────────────────────────────── */
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+  align-items: center;
+  min-height: 40px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--elevated);
+  color: var(--text);
+  font-size: 0.81rem;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:hover     { border-color: var(--cyan); color: var(--cyan); }
+.btn:disabled  { opacity: 0.38; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.btn-primary { background: rgba(0,212,255,0.12); border-color: rgba(0,212,255,0.4); color: var(--cyan); }
+.btn-primary:hover { background: rgba(0,212,255,0.22); }
+.btn-green   { background: rgba(34,197,94,0.1);  border-color: rgba(34,197,94,0.35);  color: var(--green); }
+.btn-green:hover { background: rgba(34,197,94,0.2); }
+.btn-amber   { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.35); color: var(--amber); }
+.btn-amber:hover { background: rgba(245,158,11,0.2); }
+.btn-danger  { background: rgba(239,68,68,0.1);  border-color: rgba(239,68,68,0.35);  color: var(--red); }
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+.tog-group { display: flex; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.tog-group .btn { border: none; border-right: 1px solid var(--border); border-radius: 0; }
+.tog-group .btn:last-child { border-right: none; }
+.tog-group .btn.active { background: rgba(0,212,255,0.15); color: var(--cyan); }
+
+.ctrl-label { font-size: 0.77rem; color: var(--muted); }
+
+.rk-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rk-input {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-family: var(--mono);
+  min-width: 240px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.rk-input:focus { border-color: var(--cyan); }
+
+#match-out { font-size: 0.77rem; font-family: var(--mono); }
+#match-out .hit  { color: var(--green); }
+#match-out .miss { color: var(--red); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.71rem;
+  font-weight: 600;
+}
+.badge-cyan  { background: rgba(0,212,255,0.12); color: var(--cyan); }
+.badge-green { background: rgba(34,197,94,0.12); color: var(--green); }
+.badge-red   { background: rgba(239,68,68,0.12); color: var(--red); }
+.badge-amber { background: rgba(245,158,11,0.12); color: var(--amber); }
+
+/* ── Code panel ─────────────────────────────────────────── */
+#code-wrap {
+  background: #0d1117;
+  border-radius: 10px;
+  border: 1px solid #30363d;
+  overflow: hidden;
+}
+.code-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  border-bottom: 1px solid #30363d;
+  background: #161b22;
+}
+.code-lang { font-size: 0.69rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8b949e; font-family: var(--mono); }
+.code-dots { display: flex; gap: 5px; }
+.code-dot  { width: 10px; height: 10px; border-radius: 50%; }
+pre.code-blk {
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.79rem;
+  line-height: 1.75;
+  color: #c9d1d9;
+  background: transparent;
+}
+pre.code-blk code { font-family: inherit; }
+
+.tok-cmt  { color: #8b949e; font-style: italic; }
+.tok-str  { color: #a5d6ff; }
+.tok-kw   { color: #ff7b72; }
+.tok-type { color: #79c0ff; }
+.tok-num  { color: #f2cc60; }
+
+.code-hl {
+  display: block;
+  background: rgba(0,212,255,0.07);
+  border-left: 2px solid var(--cyan);
+  margin-left: -20px;
+  padding-left: 18px;
+  margin-right: -20px;
+  padding-right: 20px;
+}
+
+/* ── Glossary ───────────────────────────────────────────── */
+#g-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 80;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+#g-overlay.open { opacity: 1; pointer-events: all; }
+
+#g-panel {
+  position: fixed; top: 0; right: 0;
+  width: 380px; height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 90;
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  display: flex; flex-direction: column;
+}
+#g-panel.open { transform: translateX(0); }
+
+.g-hd {
+  padding: 18px 20px 15px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.g-hd-title { font-size: 1rem; font-weight: 700; color: var(--cyan); }
+.g-close {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 1.1rem; padding: 3px 7px;
+  border-radius: 4px; line-height: 1;
+}
+.g-close:hover { color: var(--text); background: var(--elevated); }
+
+.g-list { flex: 1; overflow-y: auto; padding: 12px 16px; }
+.g-item {
+  margin-bottom: 10px;
+  padding: 11px 13px;
+  background: var(--elevated);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+.g-item:hover { border-color: rgba(0,212,255,0.35); }
+.g-term { font-weight: 600; font-size: 0.83rem; color: var(--cyan); margin-bottom: 3px; }
+.g-def  { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar" aria-label="Tutorial navigation">
+  <div class="sb-logo">
+    <div class="sb-logo-row">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect width="34" height="34" rx="8" fill="#FF6600"/>
+        <circle cx="12" cy="12" r="4" fill="white" opacity="0.9"/>
+        <circle cx="22" cy="12" r="4" fill="white" opacity="0.9"/>
+        <path d="M8 20 Q17 28 26 20" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="1.5" fill="#FF6600"/>
+        <circle cx="22" cy="12" r="1.5" fill="#FF6600"/>
+      </svg>
+      <div>
+        <div class="sb-title">RabbitMQ</div>
+        <div class="sb-sub">.NET Tutorial</div>
+      </div>
+    </div>
+  </div>
+  <ul class="sb-nav" id="sb-nav" role="list"></ul>
+  <div class="sb-footer">
+    <button class="glos-btn" id="glos-open" aria-haspopup="dialog">
+      <span aria-hidden="true">📖</span> Glossary (19 terms)
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+  <div class="ch-header">
+    <div class="ch-label" id="ch-label">Introduction</div>
+    <h1 class="ch-title" id="ch-title">What is RabbitMQ?</h1>
+    <p class="ch-sub" id="ch-sub">Message brokers and why you need one</p>
+  </div>
+  <div id="diagram-area" role="img" aria-label="Chapter diagram"></div>
+  <div id="controls" role="group" aria-label="Interactive controls"></div>
+  <div id="code-wrap">
+    <div class="code-hd">
+      <span class="code-lang">C# · RabbitMQ.Client</span>
+      <div class="code-dots">
+        <div class="code-dot" style="background:#ff5f56"></div>
+        <div class="code-dot" style="background:#ffbd2e"></div>
+        <div class="code-dot" style="background:#27c93f"></div>
+      </div>
+    </div>
+    <pre class="code-blk" id="code-body"><code id="code-inner"></code></pre>
+  </div>
+</main>
+
+<!-- GLOSSARY -->
+<div id="g-overlay" aria-hidden="true"></div>
+<div id="g-panel" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
+  <div class="g-hd">
+    <span class="g-hd-title">📖 Glossary</span>
+    <button class="g-close" id="glos-close" aria-label="Close glossary">✕</button>
+  </div>
+  <div class="g-list" id="g-list"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════════ */
+const CHAPTERS = [
+  { id: 0, label: 'Intro',     title: 'What is RabbitMQ?',     sub: 'Message brokers and why you need one' },
+  { id: 1, label: 'Ch 1',     title: 'The Basics',             sub: 'Producer → Queue → Consumer with ACK/NACK' },
+  { id: 2, label: 'Ch 2',     title: 'Exchanges',              sub: 'Direct, Topic, and Fanout routing' },
+  { id: 3, label: 'Ch 3',     title: 'Routing Keys',           sub: 'Pattern matching with * and # wildcards' },
+  { id: 4, label: 'Ch 4',     title: 'Multiple Consumers',     sub: 'Competing consumers with prefetch / QoS' },
+  { id: 5, label: 'Ch 5',     title: 'Failure Handling',       sub: 'NACK, requeue, and consumer_timeout' },
+  { id: 6, label: 'Ch 6',     title: 'Dead Letter Queue',      sub: 'DLX and DLQ — where failed messages go' },
+];
+
+const GLOSSARY = [
+  { term: 'Message Broker',         def: 'Middleware that receives messages from producers and routes them to consumers. Decouples senders from receivers so neither needs to know about the other.' },
+  { term: 'Asynchronous Messaging', def: 'A communication pattern where the sender fires a message and continues without waiting for the receiver to process it. Improves throughput and resilience.' },
+  { term: 'Decoupling',             def: 'Separating components so they do not directly depend on each other. A broker lets services evolve, scale, and fail independently.' },
+  { term: 'Producer',               def: 'An application (or thread) that creates and publishes messages to a RabbitMQ exchange.' },
+  { term: 'Consumer',               def: 'An application that subscribes to a queue and processes the messages it receives, then sends an ACK or NACK.' },
+  { term: 'Queue',                  def: 'A FIFO buffer that stores messages until a consumer retrieves them. Declare it durable + send persistent messages to survive broker restarts.' },
+  { term: 'Exchange',               def: 'Receives messages from producers and routes them to queues based on its type (direct / topic / fanout) and bindings.' },
+  { term: 'Binding',                def: 'A link between an exchange and a queue, optionally with a routing-key pattern. Tells the exchange which messages to forward to which queue.' },
+  { term: 'Routing Key',            def: 'A dot-separated string attached to a message (e.g. "orders.europe.high"). The exchange uses it to decide which queues receive the message.' },
+  { term: 'Channel',                def: 'A lightweight virtual connection multiplexed inside a TCP Connection. Create one channel per thread or Task — they are cheap and not thread-safe.' },
+  { term: 'Connection',             def: 'A long-lived TCP connection to RabbitMQ. Expensive to open — share one per process. Channels are opened inside connections.' },
+  { term: 'ACK',                    def: 'Acknowledgement. Sent by the consumer after successfully processing a message. Tells RabbitMQ it is safe to permanently delete that message.' },
+  { term: 'NACK',                   def: 'Negative Acknowledgement. Tells RabbitMQ processing failed. You choose whether to requeue the message for retry or discard it (→ DLQ).' },
+  { term: 'Prefetch Count (QoS)',   def: 'Limits how many unACKed messages a consumer holds at once. Set to 1 for fair dispatch — prevents a fast consumer from hoarding messages while a slow one starves.' },
+  { term: 'Durable',                def: 'A queue or exchange that survives a broker restart. Must be combined with persistent message delivery for full durability.' },
+  { term: 'Persistent',             def: 'Message delivery mode = 2. Tells RabbitMQ to write the message to disk. Combine with a durable queue to guarantee survival across restarts.' },
+  { term: 'Dead Letter Exchange (DLX)', def: 'An exchange where rejected (NACK + requeue:false) or expired messages are re-published. Configured on a queue via the x-dead-letter-exchange argument.' },
+  { term: 'consumer_timeout',       def: 'A broker-side timeout. If a consumer holds an unACKed message longer than this limit (default: 30 min), the channel is force-closed and the message requeued.' },
+  { term: 'Redelivered',            def: 'A flag on an incoming message. true means RabbitMQ already delivered this message at least once before. Always handle messages idempotently.' },
+];
+
+const CODE = {
+  0: `// RabbitMQ is a Message Broker — it sits between
+// your services so they don't call each other directly.
+
+// Install the NuGet package:
+// dotnet add package RabbitMQ.Client
+
+// A minimal connection:
+var factory = new ConnectionFactory { HostName = "localhost" };
+await using var connection = await factory.CreateConnectionAsync();
+await using var channel   = await connection.CreateChannelAsync();`,
+
+  1: `// Producer — publish a message
+var factory = new ConnectionFactory { HostName = "localhost" };
+await using var connection = await factory.CreateConnectionAsync();
+await using var channel    = await connection.CreateChannelAsync();
+
+await channel.QueueDeclareAsync("orders", durable: true,
+    exclusive: false, autoDelete: false);
+var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(order));
+await channel.BasicPublishAsync(
+    exchange: "", routingKey: "orders", body: body);
+
+// Consumer — receive and acknowledge
+var consumer = new AsyncEventingBasicConsumer(channel);
+consumer.ReceivedAsync += async (_, ea) => {
+    var msg = Encoding.UTF8.GetString(ea.Body.ToArray());
+    // ... process ...
+    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+};
+await channel.BasicConsumeAsync(
+    "orders", autoAck: false, consumer: consumer);`,
+
+  2: `// Declare a topic exchange
+await channel.ExchangeDeclareAsync(
+    "orders.topic", ExchangeType.Topic, durable: true);
+
+// Declare a fanout exchange — routing key is ignored
+await channel.ExchangeDeclareAsync(
+    "notifications", ExchangeType.Fanout, durable: true);
+
+// Declare a direct exchange — exact key match
+await channel.ExchangeDeclareAsync(
+    "payments", ExchangeType.Direct, durable: true);
+
+// Bind a queue to an exchange
+await channel.QueueBindAsync("my-queue", "orders.topic", "orders.#");`,
+
+  3: `// Publish with a structured routing key
+await channel.BasicPublishAsync(
+    exchange: "orders.topic",
+    routingKey: $"orders.{region}.{priority}",
+    body: body);
+
+// * matches exactly ONE word segment
+await channel.QueueBindAsync(
+    "orders.any-region", "orders.topic", "orders.*");
+
+// # matches ZERO OR MORE word segments
+await channel.QueueBindAsync(
+    "orders.europe-all", "orders.topic", "orders.europe.#");
+
+// Combine both wildcards in one pattern
+await channel.QueueBindAsync(
+    "orders.hi-pri", "orders.topic", "orders.*.high");`,
+
+  4: `// Limit unACKed messages per consumer — "prefetch" / QoS
+await channel.BasicQosAsync(
+    prefetchSize: 0, prefetchCount: 1, global: false);
+
+// Worker.cs — implements IHostedService
+public class Worker(IConnection conn, ILogger log, string name)
+    : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        await using var ch = await conn.CreateChannelAsync(ct);
+        await ch.BasicQosAsync(0, prefetchCount: 1, global: false);
+        var consumer = new AsyncEventingBasicConsumer(ch);
+        consumer.ReceivedAsync += async (_, ea) => {
+            // ... process ...
+            await ch.BasicAckAsync(ea.DeliveryTag, false);
+        };
+        await ch.BasicConsumeAsync("orders", false, consumer);
+        await Task.Delay(Timeout.Infinite, ct);
+    }
+}
+
+// Register two independent workers in Program.cs
+builder.Services.AddSingleton<IHostedService>(sp =>
+    new Worker(connection, logger, "Consumer-1"));
+builder.Services.AddSingleton<IHostedService>(sp =>
+    new Worker(connection, logger, "Consumer-2"));`,
+
+  5: `// NACK — reject and route to dead letter (discard)
+await channel.BasicNackAsync(
+    ea.DeliveryTag, multiple: false, requeue: false);
+
+// NACK — reject and requeue for retry
+await channel.BasicNackAsync(
+    ea.DeliveryTag, multiple: false, requeue: true);
+
+// Check if this is a re-delivery before processing
+if (ea.Redelivered)
+{
+    // Handle idempotently — or route to DLQ manually
+    log.LogWarning("Redelivered message {Tag}", ea.DeliveryTag);
+}
+
+// consumer_timeout is set broker-side (rabbitmq.conf):
+// consumer_timeout = 30000   # 30 seconds`,
+
+  6: `// Declare the main queue with DLX configured
+var args = new Dictionary<string, object?> {
+    { "x-dead-letter-exchange", "dlx" }
+};
+await channel.QueueDeclareAsync("orders", durable: true,
+    exclusive: false, autoDelete: false, arguments: args);
+
+// Declare the Dead Letter Exchange
+await channel.ExchangeDeclareAsync(
+    "dlx", ExchangeType.Direct, durable: true);
+
+// Declare the Dead Letter Queue
+await channel.QueueDeclareAsync("orders.dead-letter",
+    durable: true, exclusive: false, autoDelete: false);
+
+// Bind DLQ to DLX with the original queue name as routing key
+await channel.QueueBindAsync(
+    "orders.dead-letter", "dlx", "orders");`,
+};
+
+const HL = {
+  0: [7, 8, 9],
+  1: [5, 6, 8, 9, 13, 14, 16],
+  2: [2, 3, 6, 7, 10, 11, 14],
+  3: [2, 3, 4, 8, 9, 12, 13, 16, 17],
+  4: [2, 3, 19, 20, 23, 24, 25],
+  5: [2, 3, 6, 7, 11, 12],
+  6: [2, 3, 4, 7, 8, 11, 12, 15, 16, 19],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SVG HELPERS
+═══════════════════════════════════════════════════════════ */
+const NS = 'http://www.w3.org/2000/svg';
+function s(tag, a={}) {
+  const e = document.createElementNS(NS,'svg'===tag?NS:NS,tag);
+  for(const[k,v] of Object.entries(a)) e.setAttribute(k,v);
+  return e;
+}
+function svgEl(tag, attrs={}) {
+  const e = document.createElementNS(NS, tag);
+  for(const[k,v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  return e;
+}
+
+function makeSVG(W, H) {
+  const svg = svgEl('svg', { viewBox:`0 0 ${W} ${H}`, width:'100%', height:H,
+    xmlns: NS, style:'display:block;overflow:visible' });
+  const defs = svgEl('defs');
+
+  const mkM = (id, col) => {
+    const m = svgEl('marker', { id, markerWidth:'8', markerHeight:'6',
+      refX:'7', refY:'3', orient:'auto' });
+    const p = svgEl('polygon', { points:'0 0,8 3,0 6', fill:col });
+    m.appendChild(p); return m;
+  };
+  defs.appendChild(mkM('am-cyan',  '#00d4ff'));
+  defs.appendChild(mkM('am-muted', '#4a5568'));
+  defs.appendChild(mkM('am-red',   '#ef4444'));
+  defs.appendChild(mkM('am-green', '#22c55e'));
+  defs.appendChild(mkM('am-amber', '#f59e0b'));
+
+  const flt = svgEl('filter', { id:'glow', x:'-60%', y:'-60%', width:'220%', height:'220%' });
+  const fb  = svgEl('feGaussianBlur', { stdDeviation:'3.5', result:'blur' });
+  const fm  = svgEl('feMerge');
+  fm.appendChild(svgEl('feMergeNode', { in:'blur' }));
+  fm.appendChild(svgEl('feMergeNode', { in:'SourceGraphic' }));
+  flt.appendChild(fb); flt.appendChild(fm);
+  defs.appendChild(flt);
+  svg.appendChild(defs);
+  return svg;
+}
+
+function box(svg, x, y, w, h, label, sub, {stroke='#4a5568',fill='#252b3b',tc='#e2e8f0',rx=8}={}) {
+  const g = svgEl('g');
+  g.appendChild(svgEl('rect', {x,y,width:w,height:h,rx,fill,stroke,'stroke-width':'1.5'}));
+  const ty = sub ? y+h/2-7 : y+h/2;
+  const t = svgEl('text', {x:x+w/2,y:ty,'text-anchor':'middle','dominant-baseline':'middle',
+    fill:tc,'font-size':'12','font-family':'system-ui,sans-serif','font-weight':'600'});
+  t.textContent = label; g.appendChild(t);
+  if(sub){
+    const s2 = svgEl('text', {x:x+w/2,y:y+h/2+9,'text-anchor':'middle',
+      fill:'#64748b','font-size':'9','font-family':'monospace'});
+    s2.textContent = sub; g.appendChild(s2);
+  }
+  svg.appendChild(g); return g;
+}
+
+function queue(svg, x, y, label, {stroke='#4a5568'}={}) {
+  const W=114, H=48;
+  const g = svgEl('g');
+  g.appendChild(svgEl('rect',{x:x+4,y:y-3,width:W,height:H,rx:6,fill:'#181c28',stroke,'stroke-width':'1'}));
+  g.appendChild(svgEl('rect',{x:x+2,y:y-1.5,width:W,height:H,rx:6,fill:'#1c2135',stroke,'stroke-width':'1'}));
+  g.appendChild(svgEl('rect',{x,y,width:W,height:H,rx:6,fill:'#252b3b',stroke,'stroke-width':'1.5'}));
+  const t = svgEl('text',{x:x+W/2,y:y+H/2-6,'text-anchor':'middle','dominant-baseline':'middle',
+    fill:'#e2e8f0','font-size':'12','font-family':'system-ui','font-weight':'600'});
+  t.textContent = label; g.appendChild(t);
+  const s2 = svgEl('text',{x:x+W/2,y:y+H/2+9,'text-anchor':'middle',
+    fill:'#64748b','font-size':'9','font-family':'monospace'});
+  s2.textContent = 'queue'; g.appendChild(s2);
+  svg.appendChild(g);
+  return { g, x, y, W, H, cx:x+W/2, cy:y+H/2 };
+}
+
+function arrow(svg, x1,y1,x2,y2, {col='muted',dash=false}={}) {
+  const colMap = {cyan:'#00d4ff',muted:'#4a5568',red:'#ef4444',green:'#22c55e',amber:'#f59e0b'};
+  const a = svgEl('line', {x1,y1,x2,y2,stroke:colMap[col]||colMap.muted,'stroke-width':'1.5',
+    'marker-end':`url(#am-${col})`});
+  if(dash) a.setAttribute('stroke-dasharray','5 3');
+  svg.appendChild(a); return a;
+}
+
+function txt(svg,x,y,str,{col='#64748b',size=10,mono=false,anchor='middle',id}={}) {
+  const attrs = {x,y,'text-anchor':anchor,fill:col,'font-size':size,
+    'font-family':mono?'monospace':'system-ui,sans-serif'};
+  if(id) attrs.id = id;
+  const t = svgEl('text',attrs);
+  t.textContent = str; svg.appendChild(t); return t;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION ENGINE
+═══════════════════════════════════════════════════════════ */
+const REDUCED = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function eio(t) { return t<0.5?2*t*t:-1+(4-2*t)*t; }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function posOn(wps, t) {
+  const n = wps.length-1;
+  if(n===0) return {x:wps[0][0],y:wps[0][1]};
+  const seg = Math.min(Math.floor(t*n),n-1);
+  const st  = t*n - seg;
+  return { x:lerp(wps[seg][0],wps[seg+1][0],st),
+           y:lerp(wps[seg][1],wps[seg+1][1],st) };
+}
+
+function dot(svg, wps, {col='#00d4ff',r=7,dur=900,onArrive,onDone}={}) {
+  const c = svgEl('circle',{r,fill:col,filter:'url(#glow)'});
+  svg.appendChild(c);
+  if(REDUCED){
+    const end=wps[wps.length-1];
+    c.setAttribute('cx',end[0]); c.setAttribute('cy',end[1]);
+    setTimeout(()=>{ onArrive&&onArrive(c); onDone&&onDone(c); },20);
+    return c;
+  }
+  let t0=null;
+  function step(ts){
+    if(!t0) t0=ts;
+    const raw=Math.min((ts-t0)/dur,1), t=eio(raw);
+    const p=posOn(wps,t);
+    c.setAttribute('cx',p.x); c.setAttribute('cy',p.y);
+    if(raw<1){ requestAnimationFrame(step); }
+    else { onArrive&&onArrive(c); setTimeout(()=>onDone&&onDone(c),20); }
+  }
+  requestAnimationFrame(step);
+  return c;
+}
+
+function flash(svg,x,y,col='#22c55e') {
+  if(REDUCED) return;
+  const ring=svgEl('circle',{cx:x,cy:y,r:'10',fill:'none',stroke:col,'stroke-width':'2',opacity:'0.8'});
+  svg.appendChild(ring);
+  let t0=null;
+  function step(ts){
+    if(!t0) t0=ts;
+    const p=(ts-t0)/450;
+    if(p>=1){ try{svg.removeChild(ring);}catch(_){} return; }
+    ring.setAttribute('r', lerp(10,28,p));
+    ring.setAttribute('opacity', lerp(0.8,0,p));
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function rm(el){ try{ el.parentNode.removeChild(el); }catch(_){} }
+function wait(ms){ return new Promise(r=>setTimeout(r, REDUCED?5:ms)); }
+
+/* ═══════════════════════════════════════════════════════════
+   CODE HIGHLIGHTER
+═══════════════════════════════════════════════════════════ */
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function hlCS(code, hlLines=[]) {
+  const hset = new Set(hlLines);
+  return code.split('\n').map((ln,i) => {
+    let h = esc(ln);
+    // comments (before other replacements to avoid double-wrapping)
+    h = h.replace(/(\/\/[^\n]*)$/,'<span class="tok-cmt">$1</span>');
+    // strings (simple)
+    h = h.replace(/(&quot;[^&]*?&quot;)/g,'<span class="tok-str">$1</span>');
+    // keywords
+    ['await','using','var','async','new','if','else','return','void','string','bool','int',
+     'true','false','null','static','public','private','protected','override','sealed',
+     'class','interface','readonly','abstract'].forEach(kw=>{
+      h = h.replace(new RegExp(`(?<![\\w.-])(${kw})(?![\\w])`, 'g'),'<span class="tok-kw">$1</span>');
+    });
+    // types
+    ['ConnectionFactory','AsyncEventingBasicConsumer','Encoding','JsonSerializer',
+     'Dictionary','ExchangeType','IHostedService','BackgroundService','IConnection',
+     'IChannel','ILogger','Worker','Task','CancellationToken','Timeout'].forEach(ty=>{
+      h = h.replace(new RegExp(`(?<![\\w.-])(${ty})(?![\\w])`, 'g'),'<span class="tok-type">$1</span>');
+    });
+    // numbers
+    h = h.replace(/(?<!\w)(\d+)(?!\w)/g,'<span class="tok-num">$1</span>');
+
+    return hset.has(i+1)
+      ? `<span class="code-hl">${h}</span>`
+      : h;
+  }).join('\n');
+}
+
+function renderCode(id){
+  document.getElementById('code-inner').innerHTML = hlCS(CODE[id]||'// No code snippet for this chapter.', HL[id]||[]);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 0 — What is RabbitMQ?
+═══════════════════════════════════════════════════════════ */
+function ch0(da, ca){
+  let mode = 'before';
+
+  function draw(){
+    da.innerHTML='';
+    const svg = makeSVG(760,280);
+    svg.setAttribute('height','280');
+
+    if(mode==='before'){
+      // Three services fully connected — spaghetti
+      const svc = [{x:130,y:70,lbl:'Order\nService'},{x:580,y:70,lbl:'Payment\nService'},{x:355,y:200,lbl:'Email\nService'}];
+      const pairs=[[0,1],[1,0],[0,2],[2,0],[1,2],[2,1]];
+      pairs.forEach(([a,b])=>{
+        const dx=svc[b].x-svc[a].x,dy=svc[b].y-svc[a].y;
+        const d=Math.sqrt(dx*dx+dy*dy), nx=dx/d*58, ny=dy/d*58;
+        arrow(svg, svc[a].x+nx,svc[a].y+ny+14, svc[b].x-nx,svc[b].y-ny+14, {col:'red'});
+      });
+      svc.forEach(sv=>{
+        const parts=sv.lbl.split('\n');
+        const g=svgEl('g');
+        g.appendChild(svgEl('rect',{x:sv.x-54,y:sv.y,width:108,height:48,rx:8,fill:'#2a1515',stroke:'#ef4444','stroke-width':'1.5'}));
+        parts.forEach((p,i)=>{
+          const t=svgEl('text',{x:sv.x,'y':sv.y+24+(i-0.3)*13,'text-anchor':'middle',fill:'#fca5a5','font-size':'12','font-family':'system-ui','font-weight':'600'});
+          t.textContent=p; g.appendChild(t);
+        });
+        svg.appendChild(g);
+      });
+      txt(svg,380,268,'⚠ Tight coupling — every service must know how to reach every other service',{col:'#ef4444',size:11});
+    } else {
+      // Broker in the middle
+      const prod=[{x:40,y:75,lbl:'Order\nSvc'},{x:40,y:165,lbl:'Payment\nSvc'}];
+      const cons=[{x:590,y:55,lbl:'Email Svc'},{x:590,y:130,lbl:'Analytics'},{x:590,y:205,lbl:'Warehouse'}];
+
+      prod.forEach(p=>{
+        const parts=p.lbl.split('\n');
+        const g=svgEl('g');
+        g.appendChild(svgEl('rect',{x:p.x,y:p.y,width:100,height:44,rx:7,fill:'#1a2035',stroke:'#4a7aaa','stroke-width':'1.5'}));
+        parts.forEach((t,i)=>{
+          const te=svgEl('text',{x:p.x+50,y:p.y+15+i*16,'text-anchor':'middle',fill:'#93c5fd','font-size':'11','font-family':'system-ui','font-weight':'600'});
+          te.textContent=t; g.appendChild(te);
+        });
+        svg.appendChild(g);
+        arrow(svg, p.x+100,p.y+22, 280,140, {col:'cyan'});
+      });
+
+      box(svg, 280,114,160,52,'RabbitMQ Broker','message broker',{stroke:'#00d4ff',fill:'#0f2030',tc:'#00d4ff'});
+
+      cons.forEach(c=>{
+        box(svg, c.x,c.y,120,42,c.lbl,null,{stroke:'#4aaa4a',fill:'#182018',tc:'#86efac'});
+        arrow(svg, 440,140, c.x,c.y+21, {col:'cyan'});
+      });
+
+      txt(svg,380,270,'✓ Decoupled — services only talk to the broker; they never call each other directly',{col:'#22c55e',size:11});
+    }
+    da.appendChild(svg);
+  }
+
+  draw();
+
+  ca.innerHTML=`
+<div class="tog-group">
+  <button class="btn active" id="b-before">⚠ Before (Tight Coupling)</button>
+  <button class="btn" id="b-after">✓ After (With Broker)</button>
+</div>
+<span class="ctrl-label">Toggle to see the architectural difference</span>`;
+
+  document.getElementById('b-before').onclick=()=>{ mode='before'; document.getElementById('b-before').classList.add('active'); document.getElementById('b-after').classList.remove('active'); draw(); };
+  document.getElementById('b-after').onclick=()=>{ mode='after'; document.getElementById('b-after').classList.add('active'); document.getElementById('b-before').classList.remove('active'); draw(); };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 1 — The Basics
+═══════════════════════════════════════════════════════════ */
+function ch1(da, ca){
+  let outcome='ack', busy=false;
+  da.innerHTML='';
+  const svg = makeSVG(760,200); svg.setAttribute('height','200');
+
+  box(svg,20,76,110,48,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
+  box(svg,200,76,110,48,'Exchange','(default "")',{stroke:'#7a5aaa',fill:'#20182a',tc:'#c0a8e8'});
+  const q = queue(svg,380,76,'"orders"');
+  box(svg,560,76,120,48,'Consumer',null,{stroke:'#4aaa4a',fill:'#182018'});
+
+  arrow(svg,130,100,198,100,{col:'muted'});
+  arrow(svg,310,100,378,100,{col:'muted'});
+  arrow(svg,496,100,558,100,{col:'muted'});
+  txt(svg,380,185,'Messages are buffered in the queue until the consumer is ready',{col:'#4a5568',size:10});
+
+  async function send(){
+    if(busy) return; busy=true;
+    document.getElementById('b1-send').disabled=true;
+
+    await new Promise(r=>dot(svg,[[75,100],[255,100]],{dur:550,onDone(d){rm(d);r();}}));
+    await new Promise(r=>dot(svg,[[255,100],[437,100]],{dur:550,onDone(d){rm(d);r();}}));
+    await wait(250);
+
+    if(outcome==='ack'){
+      await new Promise(r=>dot(svg,[[437,100],[620,100]],{dur:650,
+        onArrive(d){ flash(svg,620,100,'#22c55e'); setTimeout(()=>rm(d),180); },
+        onDone:r}));
+    } else {
+      await new Promise(r=>dot(svg,[[437,100],[620,100]],{dur:650,
+        onArrive(d){
+          d.setAttribute('fill','#f59e0b');
+          setTimeout(()=>{
+            dot(svg,[[620,100],[437,100]],{col:'#f59e0b',dur:500,
+              onArrive(d2){ flash(svg,437,100,'#f59e0b'); setTimeout(()=>rm(d2),180); },
+              onDone:r});
+            rm(d);
+          },350);
+        }
+      }));
+    }
+    await wait(300);
+    busy=false; document.getElementById('b1-send').disabled=false;
+  }
+
+  ca.innerHTML=`
+<button class="btn btn-primary" id="b1-send">▶ Send Message</button>
+<div class="tog-group">
+  <button class="btn active" id="b1-ack">✓ ACK (success)</button>
+  <button class="btn" id="b1-nack">↩ NACK (requeue)</button>
+</div>`;
+
+  document.getElementById('b1-send').onclick=send;
+  document.getElementById('b1-ack').onclick=()=>{ outcome='ack'; document.getElementById('b1-ack').classList.add('active'); document.getElementById('b1-nack').classList.remove('active'); };
+  document.getElementById('b1-nack').onclick=()=>{ outcome='nack'; document.getElementById('b1-nack').classList.add('active'); document.getElementById('b1-ack').classList.remove('active'); };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 2 — Exchanges
+═══════════════════════════════════════════════════════════ */
+function ch2(da, ca){
+  let tab='direct', busy=false;
+
+  const configs = {
+    direct: {
+      exLabel:'Direct Exchange', exSub:'type: direct',
+      qs:[{y:62,label:'"payments"',key:'payment'},{y:132,label:'"orders"',key:'order'}],
+      footer:'Routes to the queue whose binding key exactly matches the message routing key',
+      animTargets:[{qi:1,x:530+57,y:132+24}],
+    },
+    topic: {
+      exLabel:'Topic Exchange', exSub:'type: topic',
+      qs:[{y:40,label:'"orders.high"',pat:'orders.*.high'},{y:108,label:'"orders.eu"',pat:'orders.europe.#'},{y:176,label:'"all.orders"',pat:'#'}],
+      footer:'Wildcards: * = one word  ·  # = zero or more words',
+      animTargets:[{qi:0,x:530+57,y:40+24},{qi:1,x:530+57,y:108+24}],
+    },
+    fanout: {
+      exLabel:'Fanout Exchange', exSub:'type: fanout',
+      qs:[{y:44,label:'"email-svc"'},{y:112,label:'"analytics"'},{y:180,label:'"warehouse"'}],
+      footer:'Fanout: copies message to every bound queue — routing key is completely ignored',
+      animTargets:[{qi:0,x:530+57,y:44+24},{qi:1,x:530+57,y:112+24},{qi:2,x:530+57,y:180+24}],
+    }
+  };
+
+  function draw(type){
+    da.innerHTML='';
+    const cfg = configs[type];
+
+    // sub-tabs
+    const tabBar = document.createElement('div');
+    tabBar.className='sub-tabs';
+    ['direct','topic','fanout'].forEach(t=>{
+      const d=document.createElement('div');
+      d.className='sub-tab'+(t===type?' active':'');
+      d.textContent=t.charAt(0).toUpperCase()+t.slice(1);
+      d.onclick=()=>{ tab=t; draw(t); bindBtn(); };
+      tabBar.appendChild(d);
+    });
+    da.appendChild(tabBar);
+
+    const H = type==='fanout'?240:type==='topic'?250:220;
+    const svg = makeSVG(760, H); svg.setAttribute('height',H);
+
+    box(svg,20,H/2-22,100,44,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
+    arrow(svg,120,H/2,280,H/2,{col:'muted'});
+    box(svg,280,H/2-23,150,46,cfg.exLabel,cfg.exSub,{stroke:'#00d4ff',fill:'#0f2030',tc:'#00d4ff'});
+
+    cfg.qs.forEach((q2,i)=>{
+      const qr = queue(svg,530,q2.y,q2.label);
+      arrow(svg,430,H/2, 530,q2.y+24, {col:'muted'});
+      if(q2.key) txt(svg,514,q2.y+10,q2.key,{col:'#7a5aaa',size:9,mono:true,anchor:'end'});
+      if(q2.pat) txt(svg,524,q2.y+8,q2.pat,{col:'#7a5aaa',size:9,mono:true,anchor:'end'});
+    });
+
+    txt(svg,380,H-10,cfg.footer,{col:'#4a5568',size:10});
+    da.appendChild(svg);
+    return svg;
+  }
+
+  let curSVG = draw('direct');
+
+  function bindBtn(){
+    const btn = document.getElementById('b2-anim');
+    if(!btn) return;
+    btn.onclick=()=>animate();
+  }
+
+  async function animate(){
+    if(busy) return; busy=true;
+    const btn=document.getElementById('b2-anim'); if(btn) btn.disabled=true;
+    const cfg=configs[tab];
+    const svg=da.querySelector('svg');
+    if(!svg){ busy=false; return; }
+    const H=parseInt(svg.getAttribute('height'));
+    const exRX=430;
+
+    if(tab==='fanout'){
+      await new Promise(r=>dot(svg,[[120,H/2],[280,H/2]],{dur:450,onDone(d){rm(d);r();}}));
+      const targets=cfg.animTargets.map(t=>[t.x,t.y]);
+      let done=0;
+      targets.forEach(([tx,ty])=>{
+        dot(svg,[[430,H/2],[tx,ty]],{dur:520,
+          onArrive(d){ flash(svg,tx,ty,'#00d4ff'); setTimeout(()=>rm(d),180); },
+          onDone(){ done++; if(done===targets.length){ busy=false; if(btn) btn.disabled=false; } }
+        });
+      });
+    } else {
+      const t=cfg.animTargets[0];
+      await new Promise(r=>dot(svg,[[120,H/2],[280,H/2],[exRX,H/2],[t.x,t.y]],{dur:1100,
+        onArrive(d){ flash(svg,t.x,t.y,'#00d4ff'); setTimeout(()=>rm(d),180); },
+        onDone:r}));
+      if(tab==='topic' && cfg.animTargets.length>1){
+        const t2=cfg.animTargets[1];
+        await wait(100);
+        await new Promise(r=>dot(svg,[[exRX,H/2],[t2.x,t2.y]],{dur:480,
+          onArrive(d){ flash(svg,t2.x,t2.y,'#00d4ff'); setTimeout(()=>rm(d),180); },
+          onDone:r}));
+      }
+      busy=false; if(btn) btn.disabled=false;
+    }
+  }
+
+  ca.innerHTML=`<button class="btn btn-primary" id="b2-anim">▶ Animate Routing</button>
+<span class="ctrl-label">Click a tab to switch exchange types, then animate</span>`;
+  bindBtn();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 3 — Routing Keys
+═══════════════════════════════════════════════════════════ */
+function ch3(da, ca){
+  da.innerHTML='';
+  const svg = makeSVG(760,270); svg.setAttribute('height','270');
+
+  const PATS = [
+    { id:'p0', pat:'orders.*',        label:'"orders.any"',   qy:42,
+      matches: k => { const p=k.split('.'); return p[0]==='orders' && p.length===2 && p[1].length>0; } },
+    { id:'p1', pat:'orders.#',        label:'"orders.all"',   qy:100,
+      matches: k => k==='orders' || k.startsWith('orders.') },
+    { id:'p2', pat:'orders.europe.#', label:'"orders.europe"',qy:158,
+      matches: k => k==='orders.europe' || k.startsWith('orders.europe.') },
+    { id:'p3', pat:'orders.*.high',   label:'"orders.hi-pri"',qy:216,
+      matches: k => { const p=k.split('.'); return p.length===3 && p[0]==='orders' && p[2]==='high'; } },
+  ];
+
+  box(svg,20,120,100,44,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
+  box(svg,190,120,150,44,'Topic Exchange','type: topic',{stroke:'#00d4ff',fill:'#0f2030',tc:'#00d4ff'});
+  arrow(svg,120,142,188,142,{col:'muted'});
+
+  // store element references for later updating
+  const arrowEls=[], patEls=[], qRects=[];
+  PATS.forEach((p,i)=>{
+    const qr = queue(svg,490,p.qy,p.label);
+    const a = arrow(svg,340,142, 490,p.qy+24, {col:'muted'});
+    a.setAttribute('id',`rk-arr-${p.id}`);
+    const pe = txt(svg,480,p.qy+10,p.pat,{col:'#7a5aaa',size:10,mono:true,anchor:'end',id:`rk-pat-${p.id}`});
+    arrowEls.push(a); patEls.push(pe); qRects.push(qr);
+  });
+
+  txt(svg,380,262,'Type a routing key below to see which queue patterns match',{col:'#4a5568',size:10});
+  da.appendChild(svg);
+
+  function update(key){
+    PATS.forEach((p,i)=>{
+      const hit = key.length>0 && p.matches(key);
+      arrowEls[i].setAttribute('stroke',  hit?'#00d4ff':'#4a5568');
+      arrowEls[i].setAttribute('opacity', hit?'1':'0.3');
+      arrowEls[i].setAttribute('marker-end', hit?'url(#am-cyan)':'url(#am-muted)');
+      patEls[i].setAttribute('fill', hit?'#00d4ff':'#7a5aaa');
+      qRects[i].g.querySelector('rect:last-of-type').setAttribute('stroke', hit?'#00d4ff':'#4a5568');
+    });
+    const out = document.getElementById('match-out');
+    if(!out) return;
+    if(!key){ out.innerHTML='<span style="color:#64748b">Type a routing key to see matches</span>'; return; }
+    const hits = PATS.filter(p=>p.matches(key)).map(p=>p.pat);
+    if(hits.length===0) out.innerHTML=`<span class="miss">No patterns match "<strong>${key}</strong>"</span>`;
+    else out.innerHTML=`<span class="hit">✓ Matches: ${hits.join('  ·  ')}</span>`;
+  }
+
+  ca.innerHTML=`
+<div class="rk-wrap">
+  <span class="ctrl-label">Routing key:</span>
+  <input class="rk-input" id="rk-in" placeholder="e.g. orders.europe.high" value="orders.europe.high" aria-label="Routing key to test"/>
+  <span id="match-out"></span>
+</div>`;
+  const inp=document.getElementById('rk-in');
+  inp.addEventListener('input',()=>update(inp.value.trim()));
+  update(inp.value.trim());
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 4 — Multiple Consumers
+═══════════════════════════════════════════════════════════ */
+function ch4(da, ca){
+  let busy=false;
+  da.innerHTML='';
+  const svg = makeSVG(760,240); svg.setAttribute('height','240');
+
+  queue(svg,60,96,'"orders"');
+  const CONS=[{x:510,y:40},{x:510,y:110},{x:510,y:180}];
+  const badgeEls=[];
+
+  CONS.forEach((c,i)=>{
+    box(svg,c.x,c.y,140,46,`Consumer-${i+1}`,'prefetch: 1',{stroke:'#4aaa4a',fill:'#182018'});
+    arrow(svg,176,120,c.x,c.y+23,{col:'muted'});
+    const b=svgEl('text',{x:c.x+145,y:c.y+6,fill:'#00d4ff','font-size':'10','font-family':'monospace',opacity:'0.6'});
+    b.textContent='idle'; svg.appendChild(b); badgeEls.push(b);
+  });
+
+  txt(svg,300,232,'prefetchCount=1 → at most 1 in-flight message per consumer; round-robin dispatch',{col:'#4a5568',size:10});
+  da.appendChild(svg);
+
+  async function runBatch(){
+    if(busy) return; busy=true;
+    document.getElementById('b4-batch').disabled=true;
+    const counts=[0,0,0];
+    badgeEls.forEach(b=>{ b.textContent='idle'; b.setAttribute('opacity','0.5'); });
+
+    for(let i=0;i<6;i++){
+      const ci=i%3, c=CONS[ci];
+      await new Promise(r=>dot(svg,[[118,120],[c.x,c.y+23]],{dur:500,
+        onArrive(d){
+          counts[ci]++;
+          badgeEls[ci].textContent=`${counts[ci]} msg`;
+          badgeEls[ci].setAttribute('opacity','1');
+          flash(svg,c.x,c.y+23,'#00d4ff');
+          setTimeout(()=>{ rm(d); r(); },REDUCED?5:160);
+        }
+      }));
+      await wait(80);
+    }
+
+    await wait(500);
+    for(let i=0;i<3;i++){
+      flash(svg,CONS[i].x,CONS[i].y+23,'#22c55e');
+      badgeEls[i].textContent='✓ ack';
+      badgeEls[i].setAttribute('fill','#22c55e');
+      await wait(130);
+    }
+    await wait(400);
+    badgeEls.forEach(b=>{ b.textContent='idle'; b.setAttribute('fill','#00d4ff'); b.setAttribute('opacity','0.5'); });
+    busy=false; document.getElementById('b4-batch').disabled=false;
+  }
+
+  ca.innerHTML=`
+<button class="btn btn-primary" id="b4-batch">▶ Send 6 Messages</button>
+<span class="ctrl-label">Watch round-robin distribution across 3 consumers</span>`;
+  document.getElementById('b4-batch').onclick=runBatch;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 5 — Failure Handling
+═══════════════════════════════════════════════════════════ */
+function ch5(da, ca){
+  let busy=false;
+  da.innerHTML='';
+  const svg = makeSVG(760,220); svg.setAttribute('height','220');
+
+  box(svg,10,86,100,46,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
+  queue(svg,170,86,'"orders"');
+  box(svg,360,86,120,46,'Consumer',null,{stroke:'#4aaa4a',fill:'#182018'});
+  box(svg,560,86,120,46,'DLQ','"orders.dlq"',{stroke:'#ef4444',fill:'#2a0d0d',tc:'#ef4444'});
+
+  arrow(svg,110,109,168,109,{col:'muted'});
+  arrow(svg,286,109,358,109,{col:'muted'});
+  arrow(svg,482,109,558,109,{col:'red',dash:true});
+
+  txt(svg,520,148,'— NACK+discard →',{col:'#ef4444',size:9,mono:true});
+  txt(svg,227,80,'(messages buffered here)',{col:'#4a5568',size:9});
+
+  const rdel=svgEl('text',{x:420,y:76,'text-anchor':'middle',fill:'#f59e0b','font-size':'10','font-family':'monospace',opacity:'0'});
+  rdel.textContent='redelivered: true'; svg.appendChild(rdel);
+  da.appendChild(svg);
+
+  async function sendAndArrive(){
+    await new Promise(r=>dot(svg,[[60,109],[224,109]],{dur:450,onDone(d){rm(d);r();}}));
+    await wait(150);
+    return new Promise(r=>dot(svg,[[224,109],[420,109]],{dur:550,onArrive(d){r(d);}}));
+  }
+
+  async function doOK(){
+    if(busy)return; busy=true;
+    const d=await sendAndArrive();
+    flash(svg,420,109,'#22c55e'); rm(d); await wait(300);
+    busy=false;
+  }
+
+  async function doNackRQ(){
+    if(busy)return; busy=true;
+    const d=await sendAndArrive();
+    d.setAttribute('fill','#f59e0b');
+    await wait(300);
+    rm(d);
+    await new Promise(r=>dot(svg,[[420,109],[224,109]],{col:'#f59e0b',dur:500,
+      onArrive(d2){
+        flash(svg,224,109,'#f59e0b');
+        rdel.setAttribute('opacity','1');
+        setTimeout(()=>{ rm(d2); r(); },200);
+      }}));
+    await wait(1800); rdel.setAttribute('opacity','0');
+    busy=false;
+  }
+
+  async function doNackDL(){
+    if(busy)return; busy=true;
+    const d=await sendAndArrive();
+    d.setAttribute('fill','#ef4444');
+    await wait(300); rm(d);
+    await new Promise(r=>dot(svg,[[420,109],[620,109]],{col:'#ef4444',dur:520,
+      onArrive(d2){ flash(svg,620,109,'#ef4444'); setTimeout(()=>{ rm(d2); r(); },200); }}));
+    busy=false;
+  }
+
+  async function doTimeout(){
+    if(busy)return; busy=true;
+    const d=await sendAndArrive();
+    // timer badge
+    const timer=svgEl('text',{x:420,y:76,'text-anchor':'middle',fill:'#f59e0b','font-size':'10','font-family':'monospace'});
+    timer.textContent='⏱ consumer_timeout…'; svg.appendChild(timer);
+    await wait(1400); rm(timer); rm(d);
+    await new Promise(r=>dot(svg,[[420,109],[620,109]],{col:'#ef4444',dur:520,
+      onArrive(d2){ flash(svg,620,109,'#ef4444'); setTimeout(()=>{ rm(d2); r(); },200); }}));
+    busy=false;
+  }
+
+  ca.innerHTML=`
+<button class="btn btn-green"  id="b5-ok">✓ Process OK (ACK)</button>
+<button class="btn btn-amber"  id="b5-rq">↩ NACK + Requeue</button>
+<button class="btn btn-danger" id="b5-dl">☠ NACK + Dead Letter</button>
+<button class="btn btn-amber"  id="b5-to">⏱ Timeout</button>`;
+
+  document.getElementById('b5-ok').onclick=doOK;
+  document.getElementById('b5-rq').onclick=doNackRQ;
+  document.getElementById('b5-dl').onclick=doNackDL;
+  document.getElementById('b5-to').onclick=doTimeout;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 6 — Dead Letter Queue
+═══════════════════════════════════════════════════════════ */
+function ch6(da, ca){
+  let busy=false, dlqN=0;
+  da.innerHTML='';
+  const svg = makeSVG(760,260); svg.setAttribute('height','260');
+
+  // Main flow
+  box(svg,10,102,90,44,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
+  box(svg,150,102,130,44,'Topic Exch.','type: topic',{stroke:'#7a5aaa',fill:'#20182a',tc:'#c0a8e8'});
+  queue(svg,340,102,'"orders"');
+  box(svg,520,102,110,44,'Consumer',null,{stroke:'#4aaa4a',fill:'#182018'});
+
+  // DLX + DLQ row
+  box(svg,340,188,130,44,'DLX','x-dead-letter-exch.',{stroke:'#f59e0b',fill:'#251b08',tc:'#f59e0b'});
+  queue(svg,530,188,'"orders.dlq"',{stroke:'#ef4444'});
+
+  // Arrows — main flow
+  arrow(svg,100,124,148,124,{col:'muted'});
+  arrow(svg,280,124,338,124,{col:'muted'});
+  arrow(svg,456,124,518,124,{col:'muted'});
+
+  // NACK → DLX  (dashed red, diagonal)
+  arrow(svg,520,148,405,188,{col:'red',dash:true});
+  // DLX → DLQ
+  arrow(svg,470,210,528,210,{col:'amber',dash:true});
+
+  txt(svg,465,183,'NACK',{col:'#ef4444',size:9,mono:true});
+  txt(svg,498,207,'DLX routes →',{col:'#f59e0b',size:9,mono:true,anchor:'end'});
+
+  // x-dlx badge on queue
+  txt(svg,397,100,'x-dlx: "dlx"',{col:'#f59e0b',size:9,mono:true});
+
+  const dlqBadge=svgEl('text',{x:648,y:184,'text-anchor':'middle',fill:'#ef4444','font-size':'10','font-family':'monospace',opacity:'0.5'});
+  dlqBadge.textContent='0 dead'; svg.appendChild(dlqBadge);
+  da.appendChild(svg);
+
+  async function runFlow(){
+    if(busy)return; busy=true;
+    const btn=document.getElementById('b6-run'); if(btn) btn.disabled=true;
+
+    // 1 Producer → Exchange
+    await new Promise(r=>dot(svg,[[100,124],[150,124]],{dur:400,onDone(d){rm(d);r();}}));
+    // 2 Exchange → Queue
+    await new Promise(r=>dot(svg,[[280,124],[340,124]],{dur:400,onDone(d){rm(d);r();}}));
+    await wait(200);
+    // 3 Queue → Consumer
+    const d=await new Promise(r=>dot(svg,[[397,124],[520,124]],{dur:550,onArrive(d){r(d);}}));
+    await wait(500);
+    // 4 Consumer NACKs
+    d.setAttribute('fill','#ef4444');
+    await wait(350);
+    rm(d);
+    // 5 → DLX
+    await new Promise(r=>dot(svg,[[520,148],[405,188]],{col:'#ef4444',dur:550,
+      onArrive(d2){ flash(svg,405,188,'#ef4444'); setTimeout(()=>{ rm(d2); r(); },200); }}));
+    // 6 DLX → DLQ
+    await new Promise(r=>dot(svg,[[470,210],[530,210]],{col:'#f59e0b',dur:500,
+      onArrive(d2){
+        dlqN++;
+        dlqBadge.textContent=`${dlqN} dead`;
+        dlqBadge.setAttribute('opacity','1');
+        flash(svg,587,210,'#ef4444');
+        setTimeout(()=>{ rm(d2); r(); },200);
+        const ba=document.getElementById('b6-badge');
+        if(ba) ba.textContent=`DLQ: ${dlqN} message${dlqN!==1?'s':''}`;
+      }}));
+
+    busy=false; if(btn) btn.disabled=false;
+  }
+
+  ca.innerHTML=`
+<button class="btn btn-primary" id="b6-run">▶ Run Full DLX Flow</button>
+<span class="ctrl-label">Watch a message get rejected and land in the dead-letter queue</span>
+<span class="badge badge-red" id="b6-badge" style="margin-left:auto">DLQ: 0 messages</span>`;
+  document.getElementById('b6-run').onclick=runFlow;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP
+═══════════════════════════════════════════════════════════ */
+const RENDERS = [ch0,ch1,ch2,ch3,ch4,ch5,ch6];
+let cur = 0;
+
+function go(id){
+  cur = id;
+  document.getElementById('ch-label').textContent = CHAPTERS[id].label==='Intro'?'Introduction':CHAPTERS[id].label;
+  document.getElementById('ch-title').textContent = CHAPTERS[id].title;
+  document.getElementById('ch-sub').textContent   = CHAPTERS[id].sub;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',+n.dataset.id===id));
+  const da=document.getElementById('diagram-area');
+  const ca=document.getElementById('controls');
+  da.innerHTML=''; ca.innerHTML='';
+  RENDERS[id](da,ca);
+  renderCode(id);
+  document.getElementById('main').scrollTo({top:0,behavior:'smooth'});
+}
+
+// Build sidebar nav
+const nav=document.getElementById('sb-nav');
+CHAPTERS.forEach(ch=>{
+  const li=document.createElement('li');
+  const div=document.createElement('div');
+  div.className='nav-item'+(ch.id===0?' active':'');
+  div.dataset.id=ch.id;
+  div.setAttribute('role','button');
+  div.setAttribute('tabindex','0');
+  div.setAttribute('aria-label',`${ch.label}: ${ch.title}`);
+  div.innerHTML=`<span class="nav-num">${ch.id}</span><span>${ch.title}</span>`;
+  div.onclick=()=>go(ch.id);
+  div.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(ch.id); } };
+  li.appendChild(div); nav.appendChild(li);
+});
+
+// Build glossary
+const glist=document.getElementById('g-list');
+GLOSSARY.forEach(g=>{
+  const d=document.createElement('div'); d.className='g-item';
+  d.innerHTML=`<div class="g-term">${g.term}</div><div class="g-def">${g.def}</div>`;
+  glist.appendChild(d);
+});
+
+// Glossary open/close
+const gov=document.getElementById('g-overlay');
+const gpan=document.getElementById('g-panel');
+function openG(){ gpan.removeAttribute('hidden'); setTimeout(()=>{ gov.classList.add('open'); gpan.classList.add('open'); },10); }
+function closeG(){ gov.classList.remove('open'); gpan.classList.remove('open'); setTimeout(()=>gpan.setAttribute('hidden',''),300); }
+document.getElementById('glos-open').onclick=openG;
+document.getElementById('glos-close').onclick=closeG;
+gov.onclick=closeG;
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(gpan.classList.contains('open')){ if(e.key==='Escape') closeG(); return; }
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') go(Math.min(cur+1,6));
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   go(Math.max(cur-1,0));
+});
+
+// Init
+go(0);
+</script>
+</body>
+</html>

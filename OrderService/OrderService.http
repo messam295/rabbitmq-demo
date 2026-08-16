@@ -1,0 +1,43 @@
+@OrderService_HostAddress = http://localhost:5186
+
+### Place a middle-east High order
+POST {{OrderService_HostAddress}}/orders
+Content-Type: application/json
+
+{
+  "productName": "Workstation",
+  "quantity": 5
+}
+
+### Place a US, Medium order
+POST {{OrderService_HostAddress}}/orders
+Content-Type: application/json
+
+{
+  "productName": "4K Screen",
+  "quantity": 1,
+  "region": "US",
+  "priority": "medium"
+}
+
+### Place a US, High order
+POST {{OrderService_HostAddress}}/orders
+Content-Type: application/json
+
+{
+  "productName": "PS5",
+  "quantity": 10,
+  "region": "US",
+  "priority": "high"
+}
+
+### Place a Middle-East, Low order
+POST {{OrderService_HostAddress}}/orders
+Content-Type: application/json
+
+{
+  "productName": "mouse",
+  "quantity": 1,
+  "region": "Middle East",
+  "priority": "low"
+}
