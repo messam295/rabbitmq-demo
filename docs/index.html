@@ -740,41 +740,80 @@ function rm(el){ try{ el.parentNode.removeChild(el); }catch(_){} }
 function wait(ms){ return new Promise(r=>setTimeout(r, REDUCED?5:ms)); }
 
 /* ═══════════════════════════════════════════════════════════
-   CODE HIGHLIGHTER
+   CODE HIGHLIGHTER — DOM-based (no innerHTML, CSP-safe)
 ═══════════════════════════════════════════════════════════ */
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+const KW = new Set(['await','using','var','async','new','if','else','return','void','string',
+  'bool','int','true','false','null','static','public','private','protected','override',
+  'sealed','class','interface','readonly','abstract']);
+const TY = new Set(['ConnectionFactory','AsyncEventingBasicConsumer','Encoding','JsonSerializer',
+  'Dictionary','ExchangeType','IHostedService','BackgroundService','IConnection',
+  'IChannel','ILogger','Worker','Task','CancellationToken','Timeout']);
 
-function hlCS(code, hlLines=[]) {
-  const hset = new Set(hlLines);
-  return code.split('\n').map((ln,i) => {
-    let h = esc(ln);
-    // comments (before other replacements to avoid double-wrapping)
-    h = h.replace(/(\/\/[^\n]*)$/,'<span class="tok-cmt">$1</span>');
-    // strings (simple)
-    h = h.replace(/(&quot;[^&]*?&quot;)/g,'<span class="tok-str">$1</span>');
-    // keywords
-    ['await','using','var','async','new','if','else','return','void','string','bool','int',
-     'true','false','null','static','public','private','protected','override','sealed',
-     'class','interface','readonly','abstract'].forEach(kw=>{
-      h = h.replace(new RegExp(`(?<![\\w.-])(${kw})(?![\\w])`, 'g'),'<span class="tok-kw">$1</span>');
-    });
-    // types
-    ['ConnectionFactory','AsyncEventingBasicConsumer','Encoding','JsonSerializer',
-     'Dictionary','ExchangeType','IHostedService','BackgroundService','IConnection',
-     'IChannel','ILogger','Worker','Task','CancellationToken','Timeout'].forEach(ty=>{
-      h = h.replace(new RegExp(`(?<![\\w.-])(${ty})(?![\\w])`, 'g'),'<span class="tok-type">$1</span>');
-    });
-    // numbers
-    h = h.replace(/(?<!\w)(\d+)(?!\w)/g,'<span class="tok-num">$1</span>');
-
-    return hset.has(i+1)
-      ? `<span class="code-hl">${h}</span>`
-      : h;
-  }).join('\n');
+function tokenizeLine(line) {
+  const toks = []; let pos = 0;
+  while (pos < line.length) {
+    // comment — rest of line
+    if (line[pos]==='/' && line[pos+1]==='/') {
+      toks.push({text: line.slice(pos), cls:'tok-cmt'}); break;
+    }
+    // string / interpolated string
+    if (line[pos]==='"' || line[pos]==='`' || (line[pos]==='$' && line[pos+1]==='"')) {
+      const start = pos;
+      const q = line[pos]==='$' ? (pos++, '"') : line[pos];
+      pos++;
+      while (pos < line.length && line[pos] !== q) { if (line[pos]==='\\') pos++; pos++; }
+      toks.push({text: line.slice(start, pos+1), cls:'tok-str'});
+      pos++; continue;
+    }
+    // identifier → keyword or type
+    if (/[a-zA-Z_$]/.test(line[pos])) {
+      let end = pos+1;
+      while (end < line.length && /[a-zA-Z0-9_$]/.test(line[end])) end++;
+      const w = line.slice(pos, end);
+      toks.push({text: w, cls: KW.has(w)?'tok-kw': TY.has(w)?'tok-type': null});
+      pos = end; continue;
+    }
+    // number
+    if (/\d/.test(line[pos])) {
+      let end = pos+1;
+      while (end < line.length && /[\d.]/.test(line[end])) end++;
+      toks.push({text: line.slice(pos, end), cls:'tok-num'});
+      pos = end; continue;
+    }
+    // plain chars — accumulate until next special
+    let start = pos;
+    while (pos < line.length &&
+      !(line[pos]==='/' && line[pos+1]==='/') &&
+      line[pos]!=='"' && line[pos]!=='`' &&
+      !(line[pos]==='$' && line[pos+1]==='"') &&
+      !/[a-zA-Z_$\d]/.test(line[pos])) pos++;
+    if (pos > start) toks.push({text: line.slice(start, pos), cls: null});
+    else { toks.push({text: line[pos], cls: null}); pos++; }
+  }
+  return toks;
 }
 
-function renderCode(id){
-  document.getElementById('code-inner').innerHTML = hlCS(CODE[id]||'// No code snippet for this chapter.', HL[id]||[]);
+function renderCode(id) {
+  const el = document.getElementById('code-inner');
+  while (el.firstChild) el.removeChild(el.firstChild);
+  const code = CODE[id] || '// No code snippet for this chapter.';
+  const hlSet = new Set(HL[id] || []);
+  const lines = code.split('\n');
+  lines.forEach((line, i) => {
+    const wrap = document.createElement('span');
+    if (hlSet.has(i+1)) wrap.className = 'code-hl';
+    tokenizeLine(line).forEach(({text, cls}) => {
+      if (cls) {
+        const s = document.createElement('span');
+        s.className = cls; s.textContent = text;
+        wrap.appendChild(s);
+      } else {
+        wrap.appendChild(document.createTextNode(text));
+      }
+    });
+    el.appendChild(wrap);
+    if (i < lines.length-1) el.appendChild(document.createTextNode('\n'));
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════
