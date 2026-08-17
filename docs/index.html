@@ -133,7 +133,7 @@ body {
   overflow-x: hidden;
 }
 
-.ch-header { margin-bottom: 22px; }
+.ch-header { margin-bottom: 22px; position: relative; }
 .ch-label  { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 600; margin-bottom: 6px; }
 .ch-title  { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
 .ch-sub    { font-size: 0.88rem; color: var(--muted); margin-top: 6px; }
@@ -155,16 +155,24 @@ body {
   background: var(--surface);
 }
 .sub-tab {
-  padding: 10px 20px;
+  padding: 9px 18px;
   font-size: 0.81rem;
+  font-weight: 500;
   cursor: pointer;
   color: var(--muted);
   border-bottom: 2px solid transparent;
-  transition: all 0.15s;
+  border-radius: 6px 6px 0 0;
+  transition: background 0.12s, color 0.12s;
   user-select: none;
 }
-.sub-tab:hover  { color: var(--text); }
-.sub-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.sub-tab:hover        { color: var(--text); background: var(--border); }
+.sub-tab.active       { color: var(--cyan); border-bottom-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 8%, transparent); font-weight: 600; }
+.sub-tab.active:hover { background: color-mix(in srgb, var(--cyan) 8%, transparent); color: var(--cyan); }
+
+#code-tab-bar button { padding:8px 16px;font-size:12px;font-weight:500;border:none;border-bottom:2px solid transparent;border-radius:6px 6px 0 0;background:none;color:var(--text-muted);cursor:pointer;font-family:inherit;transition:background 0.12s,color 0.12s; }
+#code-tab-bar button:hover        { background:var(--border); color:var(--text); }
+#code-tab-bar button.active       { color:var(--accent); border-bottom-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); font-weight:600; }
+#code-tab-bar button.active:hover { background:color-mix(in srgb,var(--accent) 8%,transparent); color:var(--accent); }
 
 /* ── Controls ───────────────────────────────────────────── */
 #controls {
@@ -374,7 +382,7 @@ pre.code-blk code { font-family: inherit; }
   <ul class="sb-nav" id="sb-nav" role="list"></ul>
   <div class="sb-footer">
     <button class="glos-btn" id="glos-open" aria-haspopup="dialog">
-      <span aria-hidden="true">📖</span> Glossary (19 terms)
+      <span aria-hidden="true">📖</span> Glossary (27 terms)
     </button>
   </div>
 </nav>
@@ -386,8 +394,10 @@ pre.code-blk code { font-family: inherit; }
     <h1 class="ch-title" id="ch-title">What is RabbitMQ?</h1>
     <p class="ch-sub" id="ch-sub">Message brokers and why you need one</p>
   </div>
+  <p id="ch-brief" style="font-size:14px;line-height:1.6;color:var(--text-muted);margin:0 0 18px;max-width:680px;"></p>
   <div id="diagram-area" role="img" aria-label="Chapter diagram"></div>
   <div id="controls" role="group" aria-label="Interactive controls"></div>
+  <div id="ch-note" style="font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 18px;max-width:680px;"></div>
   <div id="code-wrap">
     <div class="code-hd">
       <span class="code-lang">C# · RabbitMQ.Client</span>
@@ -399,6 +409,10 @@ pre.code-blk code { font-family: inherit; }
     </div>
     <pre class="code-blk" id="code-body"><code id="code-inner"></code></pre>
   </div>
+  <footer style="margin-top:40px;padding-top:18px;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--text-muted);">
+    &copy; <span id="footer-year"></span> <a href="https://www.linkedin.com/in/messam295" target="_blank" rel="noopener"
+      style="color:var(--cyan);text-decoration:none;font-weight:600;">Muhammad Essam</a>. All rights reserved.
+  </footer>
 </main>
 
 <!-- GLOSSARY -->
@@ -419,12 +433,14 @@ pre.code-blk code { font-family: inherit; }
 ═══════════════════════════════════════════════════════════ */
 const CHAPTERS = [
   { id: 0, label: 'Intro',     title: 'What is RabbitMQ?',     sub: 'Message brokers and why you need one' },
-  { id: 1, label: 'Ch 1',     title: 'The Basics',             sub: 'Producer → Queue → Consumer with ACK/NACK' },
-  { id: 2, label: 'Ch 2',     title: 'Exchanges',              sub: 'Direct, Topic, and Fanout routing' },
-  { id: 3, label: 'Ch 3',     title: 'Routing Keys',           sub: 'Pattern matching with * and # wildcards' },
-  { id: 4, label: 'Ch 4',     title: 'Multiple Consumers',     sub: 'Competing consumers with prefetch / QoS' },
-  { id: 5, label: 'Ch 5',     title: 'Failure Handling',       sub: 'NACK, requeue, and consumer_timeout' },
-  { id: 6, label: 'Ch 6',     title: 'Dead Letter Queue',      sub: 'DLX and DLQ — where failed messages go' },
+  { id: 1, label: 'Ch 1',     title: 'The Broker',             sub: 'Connections, channels, exchanges, queues & bindings' },
+  { id: 2, label: 'Ch 2',     title: 'The Basics',             sub: 'Producer → Queue → Consumer with ACK/NACK' },
+  { id: 3, label: 'Ch 3',     title: 'Exchanges',              sub: 'Direct, Topic, and Fanout routing' },
+  { id: 4, label: 'Ch 4',     title: 'Routing Keys',           sub: 'Pattern matching with * and # wildcards' },
+  { id: 5, label: 'Ch 5',     title: 'Multiple Consumers',     sub: 'Competing consumers with prefetch / QoS' },
+  { id: 6, label: 'Ch 6',     title: 'Failure Handling',       sub: 'NACK, requeue, and consumer_timeout' },
+  { id: 7, label: 'Ch 7',     title: 'Dead Letter Queue',      sub: 'DLX and DLQ — where failed messages go' },
+  { id: 8, label: 'Ch 8',     title: "What's Next",            sub: 'Publisher Confirms, TTL, Queue Limits & Streams' },
 ];
 
 const GLOSSARY = [
@@ -447,42 +463,113 @@ const GLOSSARY = [
   { term: 'Dead Letter Exchange (DLX)', def: 'An exchange where rejected (NACK + requeue:false) or expired messages are re-published. Configured on a queue via the x-dead-letter-exchange argument.' },
   { term: 'consumer_timeout',       def: 'A broker-side timeout. If a consumer holds an unACKed message longer than this limit (default: 30 min), the channel is force-closed and the message requeued.' },
   { term: 'Redelivered',            def: 'A flag on an incoming message. true means RabbitMQ already delivered this message at least once before. Always handle messages idempotently.' },
+  { term: 'Idempotency',            def: 'Designing an operation so it produces the same result whether applied once or many times. Required because RabbitMQ guarantees at-least-once delivery — a message may arrive twice if the consumer crashes before ACKing.' },
+  { term: 'At-Least-Once Delivery', def: 'RabbitMQ\'s delivery guarantee with manual ACK: every message is delivered at least once, but may be redelivered after a consumer crash. Exactly-once is not guaranteed — write idempotent consumers.' },
+  { term: 'exclusive',              def: 'Queue option: the queue is tied to the connection that declared it and is deleted when that connection closes. Used for temporary per-consumer queues (e.g. RPC reply queues).' },
+  { term: 'autoDelete',             def: 'Queue option: the queue is automatically deleted when the last consumer unsubscribes. Useful for short-lived work queues that should not outlive their consumers.' },
+  { term: 'autoAck',                def: 'BasicConsumeAsync option: if true, the broker deletes the message the moment it is delivered, without waiting for an explicit ACK. Fast but unsafe — a crash between delivery and processing loses the message permanently.' },
+  { term: 'DeliveryTag',            def: 'A monotonically increasing integer assigned by the broker to each delivery on a channel. Passed back in BasicAckAsync / BasicNackAsync to tell the broker which message is being acknowledged.' },
+  { term: 'mandatory',              def: 'BasicPublishAsync flag: if true, the broker returns the message to the producer when no queue matches the routing key, instead of silently dropping it. Useful for detecting misconfigured bindings.' },
+  { term: 'Message TTL',            def: 'Time-to-live for a message. Set per-message or per-queue. When a message expires before being consumed, it is dead-lettered (if a DLX is configured) or discarded.' },
 ];
 
 const CODE = {
-  0: `// RabbitMQ is a Message Broker — it sits between
-// your services so they don't call each other directly.
+  0: `// 1. Start RabbitMQ via Docker (includes the management UI):
+// docker run -d --hostname rmq --name rabbitmq \\
+//   -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+//
+// Management UI → http://localhost:15672  (user: guest / pass: guest)
 
-// Install the NuGet package:
+// 2. Install the NuGet package:
 // dotnet add package RabbitMQ.Client
 
-// A minimal connection:
+// 3. Open a connection and a channel:
 var factory = new ConnectionFactory { HostName = "localhost" };
 await using var connection = await factory.CreateConnectionAsync();
 await using var channel   = await connection.CreateChannelAsync();`,
 
-  1: `// Producer — publish a message
+  '1-producer': `// 1. Open a connection and channel
 var factory = new ConnectionFactory { HostName = "localhost" };
 await using var connection = await factory.CreateConnectionAsync();
 await using var channel    = await connection.CreateChannelAsync();
 
-await channel.QueueDeclareAsync("orders", durable: true,
-    exclusive: false, autoDelete: false);
+// 2. Declare the queue (idempotent — safe to call every time)
+await channel.QueueDeclareAsync("orders",
+    durable: true, exclusive: false, autoDelete: false);
+
+// 3. Serialize and publish to the default exchange
 var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(order));
 await channel.BasicPublishAsync(
-    exchange: "", routingKey: "orders", body: body);
+    exchange: "",          // default exchange routes by queue name
+    routingKey: "orders",  // must match the queue name exactly
+    body: body);`,
 
-// Consumer — receive and acknowledge
+  '1-consumer-ack': `// prefetchSize:0 = no size limit; prefetchCount:1 = max 1 unACKed msg
+// global:false = limit applies to this consumer only, not the whole channel
+await channel.BasicQosAsync(
+    prefetchSize: 0, prefetchCount: 1, global: false);
+
 var consumer = new AsyncEventingBasicConsumer(channel);
 consumer.ReceivedAsync += async (_, ea) => {
     var msg = Encoding.UTF8.GetString(ea.Body.ToArray());
-    // ... process ...
+    // ... process the message successfully ...
+
+    // ea.DeliveryTag — unique ID assigned by the broker for this delivery
+    // multiple:false  — ACK only this message, not all prior unACKed ones
     await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+};
+// autoAck:false — manual ACK mode; broker holds the message until we ACK/NACK
+// autoAck:true would delete it on delivery with no confirmation (fire-and-forget)
+await channel.BasicConsumeAsync(
+    "orders", autoAck: false, consumer: consumer);`,
+
+  '1-consumer-nack': `// prefetchSize:0 = no size limit; prefetchCount:1 = max 1 unACKed msg
+// global:false = limit applies to this consumer only, not the whole channel
+await channel.BasicQosAsync(
+    prefetchSize: 0, prefetchCount: 1, global: false);
+
+var consumer = new AsyncEventingBasicConsumer(channel);
+consumer.ReceivedAsync += async (_, ea) => {
+    var msg = Encoding.UTF8.GetString(ea.Body.ToArray());
+    // ... processing failed ...
+
+    // multiple:false — NACK only this message, not all prior unACKed ones
+    // requeue:true   — message returns to the queue for retry
+    // ⚠ If the error is deterministic (bad data), requeue:true causes an
+    //   infinite loop. Add a retry limit or route failures to a DLX instead.
+    await channel.BasicNackAsync(
+        ea.DeliveryTag, multiple: false, requeue: true);
 };
 await channel.BasicConsumeAsync(
     "orders", autoAck: false, consumer: consumer);`,
 
-  2: `// Declare a topic exchange
+  1: `// Every RabbitMQ operation flows through two objects:
+
+// CONNECTION — one long-lived TCP socket per process
+var factory = new ConnectionFactory { HostName = "localhost" };
+await using var connection = await factory.CreateConnectionAsync();
+
+// CHANNEL — lightweight virtual link inside the connection.
+// Create one per thread/Task; channels are not thread-safe.
+await using var channel = await connection.CreateChannelAsync();
+
+// EXCHANGE — receives messages from producers
+await channel.ExchangeDeclareAsync(
+    "orders.topic", ExchangeType.Topic, durable: true);
+
+// QUEUE — buffers messages until a consumer is ready
+await channel.QueueDeclareAsync(
+    "orders", durable: true, exclusive: false, autoDelete: false);
+
+// BINDING — links a queue to an exchange with a routing pattern
+await channel.QueueBindAsync(
+    queue: "orders",
+    exchange: "orders.topic",
+    routingKey: "orders.#");`,
+
+  2: `// Send a message above to see the code for each step.`,
+
+  3: `// Declare a topic exchange
 await channel.ExchangeDeclareAsync(
     "orders.topic", ExchangeType.Topic, durable: true);
 
@@ -497,7 +584,7 @@ await channel.ExchangeDeclareAsync(
 // Bind a queue to an exchange
 await channel.QueueBindAsync("my-queue", "orders.topic", "orders.#");`,
 
-  3: `// Publish with a structured routing key
+  4: `// Publish with a structured routing key
 await channel.BasicPublishAsync(
     exchange: "orders.topic",
     routingKey: $"orders.{region}.{priority}",
@@ -513,9 +600,9 @@ await channel.QueueBindAsync(
 
 // Combine both wildcards in one pattern
 await channel.QueueBindAsync(
-    "orders.hi-pri", "orders.topic", "orders.*.high");`,
+    "orders.high-priority", "orders.topic", "orders.*.high");`,
 
-  4: `// Limit unACKed messages per consumer — "prefetch" / QoS
+  5: `// Limit unACKed messages per consumer — "prefetch" / QoS
 await channel.BasicQosAsync(
     prefetchSize: 0, prefetchCount: 1, global: false);
 
@@ -537,31 +624,38 @@ public class Worker(IConnection conn, ILogger log, string name)
     }
 }
 
-// Register two independent workers in Program.cs
+// Register three independent workers in Program.cs
 builder.Services.AddSingleton<IHostedService>(sp =>
     new Worker(connection, logger, "Consumer-1"));
 builder.Services.AddSingleton<IHostedService>(sp =>
-    new Worker(connection, logger, "Consumer-2"));`,
+    new Worker(connection, logger, "Consumer-2"));
+builder.Services.AddSingleton<IHostedService>(sp =>
+    new Worker(connection, logger, "Consumer-3"));`,
 
-  5: `// NACK — reject and route to dead letter (discard)
+  6: `// NACK + discard → message routed to Dead Letter Exchange (if configured)
+// Use for deterministic failures: bad data that will never process correctly
 await channel.BasicNackAsync(
     ea.DeliveryTag, multiple: false, requeue: false);
 
-// NACK — reject and requeue for retry
+// NACK + requeue → message returns to the queue for another consumer to retry
+// Use for transient failures only (network blips, temporary unavailability)
+// ⚠ If the error is deterministic, requeue:true causes an infinite loop!
 await channel.BasicNackAsync(
     ea.DeliveryTag, multiple: false, requeue: true);
 
-// Check if this is a re-delivery before processing
+// ea.Redelivered = true means this message was already delivered at least once.
+// Always write idempotent consumer logic — a message may arrive more than once.
 if (ea.Redelivered)
 {
-    // Handle idempotently — or route to DLQ manually
-    log.LogWarning("Redelivered message {Tag}", ea.DeliveryTag);
+    log.LogWarning("Redelivered message {Tag} — handle idempotently", ea.DeliveryTag);
 }
 
-// consumer_timeout is set broker-side (rabbitmq.conf):
-// consumer_timeout = 30000   # 30 seconds`,
+// consumer_timeout: if a consumer holds an unACKed message longer than this
+// limit, the broker force-closes the channel and requeues the message.
+// Set in rabbitmq.conf (broker-side, not in client code):
+// consumer_timeout = 30000   # milliseconds (30 seconds)`,
 
-  6: `// Declare the main queue with DLX configured
+  7: `// Declare the main queue with DLX configured
 var args = new Dictionary<string, object?> {
     { "x-dead-letter-exchange", "dlx" }
 };
@@ -579,16 +673,102 @@ await channel.QueueDeclareAsync("orders.dead-letter",
 // Bind DLQ to DLX with the original queue name as routing key
 await channel.QueueBindAsync(
     "orders.dead-letter", "dlx", "orders");`,
+
+  '8-confirms': `// 1. Switch the channel into confirm mode
+await channel.ConfirmSelectAsync();
+
+// 2. Publish as normal
+await channel.BasicPublishAsync(
+    exchange: "orders.topic",
+    routingKey: "orders.europe.high",
+    body: body);
+
+// Simple approach — block until broker confirms (or timeout)
+await channel.WaitForConfirmsOrDieAsync(
+    timeout: TimeSpan.FromSeconds(5));
+
+// High-throughput approach — listen for async events instead
+channel.BasicAcksAsync  += (_, ea) => {
+    // ea.DeliveryTag confirmed — safe to consider published
+    return Task.CompletedTask;
+};
+channel.BasicNacksAsync += (_, ea) => {
+    // broker rejected — republish or alert
+    return Task.CompletedTask;
+};`,
+
+  '8-ttl': `// Per-message TTL — set on each individual message
+var props = new BasicProperties {
+    Expiration = "30000"  // milliseconds (string, not int)
+};
+await channel.BasicPublishAsync(
+    exchange: "", routingKey: "orders",
+    basicProperties: props, body: body);
+
+// Per-queue TTL — applies to every message in the queue
+var args = new Dictionary<string, object?> {
+    { "x-message-ttl", 30000  },  // messages expire after 30 s
+    { "x-expires",    300000  },  // queue itself deleted after 5 min idle
+};
+await channel.QueueDeclareAsync("orders", durable: true,
+    exclusive: false, autoDelete: false, arguments: args);
+
+// When a message expires:
+// → If a Dead Letter Exchange is configured, message is forwarded there
+// → Otherwise it is silently discarded`,
+
+  '8-limits': `var args = new Dictionary<string, object?> {
+    { "x-max-length",       1000        },  // max 1 000 messages
+    { "x-max-length-bytes", 10_000_000  },  // max 10 MB total
+    // Overflow behaviour (choose one):
+    { "x-overflow", "drop-head"         },  // default: evict oldest message
+    // { "x-overflow", "reject-publish" },  // refuse new publishes instead
+};
+await channel.QueueDeclareAsync("orders", durable: true,
+    exclusive: false, autoDelete: false, arguments: args);
+
+// Pair x-overflow:"drop-head" with a DLX to capture evicted messages
+// rather than losing them silently.`,
+
+  '8-streams': `// Declare a stream queue (RabbitMQ 3.9+)
+var args = new Dictionary<string, object?> {
+    { "x-queue-type", "stream" }
+};
+await channel.QueueDeclareAsync("orders.stream", durable: true,
+    exclusive: false, autoDelete: false, arguments: args);
+
+// Consumer must set QoS before consuming a stream
+await channel.BasicQosAsync(0, prefetchCount: 100, global: false);
+
+// Specify where to start reading — "first", "last", "next",
+// a timestamp, or an exact byte offset
+await channel.BasicConsumeAsync(
+    queue: "orders.stream",
+    autoAck: false,
+    consumerTag: "",
+    noLocal: false,
+    exclusive: false,
+    arguments: new Dictionary<string, object?> {
+        { "x-stream-offset", "first" }
+    },
+    consumer: consumer);
+
+// Unlike a classic queue, messages are NOT deleted on ACK.
+// Every consumer reads independently at its own offset.`,
+
+  8: `// Select a topic above to see its code.`,
 };
 
 const HL = {
   0: [7, 8, 9],
-  1: [5, 6, 8, 9, 13, 14, 16],
-  2: [2, 3, 6, 7, 10, 11, 14],
-  3: [2, 3, 4, 8, 9, 12, 13, 16, 17],
-  4: [2, 3, 19, 20, 23, 24, 25],
-  5: [2, 3, 6, 7, 11, 12],
-  6: [2, 3, 4, 7, 8, 11, 12, 15, 16, 19],
+  1: [4, 5, 8, 11, 12, 13, 16, 17, 18, 21, 22, 23],
+  2: [],
+  3: [2, 3, 6, 7, 10, 11, 14],
+  4: [2, 3, 4, 8, 9, 12, 13, 16, 17],
+  5: [2, 3, 19, 20, 23, 24, 25],
+  6: [2, 3, 6, 7, 11, 12],
+  7: [2, 3, 4, 7, 8, 11, 12, 15, 16, 19],
+  8: [],
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -698,6 +878,29 @@ function posOn(wps, t) {
            y:lerp(wps[seg][1],wps[seg+1][1],st) };
 }
 
+/* ── Pause state ─────────────────────────────────────────── */
+let PAUSED = false;
+
+// Transforms a button into a ⏸ Pause / ▶ Resume toggle for the
+// duration of an animation. Returns a restore() function to call when done.
+function animCtrl(btn) {
+  const origText  = btn.textContent;
+  const origClick = btn.onclick;
+  PAUSED = false;
+  btn.textContent = '⏸ Pause';
+  btn.disabled    = false;
+  btn.onclick = () => {
+    PAUSED = !PAUSED;
+    btn.textContent = PAUSED ? '▶ Resume' : '⏸ Pause';
+  };
+  return function restore() {
+    PAUSED = false;
+    btn.textContent = origText;
+    btn.onclick     = origClick;
+    btn.disabled    = false;
+  };
+}
+
 function dot(svg, wps, {col='#00d4ff',r=7,dur=900,onArrive,onDone}={}) {
   const c = svgEl('circle',{r,fill:col,filter:'url(#glow)'});
   svg.appendChild(c);
@@ -707,10 +910,16 @@ function dot(svg, wps, {col='#00d4ff',r=7,dur=900,onArrive,onDone}={}) {
     setTimeout(()=>{ onArrive&&onArrive(c); onDone&&onDone(c); },20);
     return c;
   }
-  let t0=null;
+  // Use elapsed-time tracking so pause simply stops accumulating time
+  let elapsed=0, lastTs=null;
   function step(ts){
-    if(!t0) t0=ts;
-    const raw=Math.min((ts-t0)/dur,1), t=eio(raw);
+    if(!PAUSED){
+      if(lastTs!==null) elapsed += ts-lastTs;
+      lastTs=ts;
+    } else {
+      lastTs=null; // reset so we don't count paused time on resume
+    }
+    const raw=Math.min(elapsed/dur,1), t=eio(raw);
     const p=posOn(wps,t);
     c.setAttribute('cx',p.x); c.setAttribute('cy',p.y);
     if(raw<1){ requestAnimationFrame(step); }
@@ -724,10 +933,15 @@ function flash(svg,x,y,col='#22c55e') {
   if(REDUCED) return;
   const ring=svgEl('circle',{cx:x,cy:y,r:'10',fill:'none',stroke:col,'stroke-width':'2',opacity:'0.8'});
   svg.appendChild(ring);
-  let t0=null;
+  let elapsed=0, lastTs=null;
   function step(ts){
-    if(!t0) t0=ts;
-    const p=(ts-t0)/450;
+    if(!PAUSED){
+      if(lastTs!==null) elapsed += ts-lastTs;
+      lastTs=ts;
+    } else {
+      lastTs=null;
+    }
+    const p=elapsed/450;
     if(p>=1){ try{svg.removeChild(ring);}catch(_){} return; }
     ring.setAttribute('r', lerp(10,28,p));
     ring.setAttribute('opacity', lerp(0.8,0,p));
@@ -737,7 +951,24 @@ function flash(svg,x,y,col='#22c55e') {
 }
 
 function rm(el){ try{ el.parentNode.removeChild(el); }catch(_){} }
-function wait(ms){ return new Promise(r=>setTimeout(r, REDUCED?5:ms)); }
+
+function wait(ms){
+  if(REDUCED) return new Promise(r=>setTimeout(r,5));
+  return new Promise(r=>{
+    let elapsed=0, lastTs=null;
+    function check(ts){
+      if(!PAUSED){
+        if(lastTs!==null) elapsed += ts-lastTs;
+        lastTs=ts;
+      } else {
+        lastTs=null;
+      }
+      if(elapsed>=ms) r();
+      else requestAnimationFrame(check);
+    }
+    requestAnimationFrame(check);
+  });
+}
 
 /* ═══════════════════════════════════════════════════════════
    CODE HIGHLIGHTER — DOM-based (no innerHTML, CSP-safe)
@@ -793,11 +1024,10 @@ function tokenizeLine(line) {
   return toks;
 }
 
-function renderCode(id) {
+function _fillCodeEl(code, hlLines) {
   const el = document.getElementById('code-inner');
   while (el.firstChild) el.removeChild(el.firstChild);
-  const code = CODE[id] || '// No code snippet for this chapter.';
-  const hlSet = new Set(HL[id] || []);
+  const hlSet = new Set(hlLines || []);
   const lines = code.split('\n');
   lines.forEach((line, i) => {
     const wrap = document.createElement('span');
@@ -816,14 +1046,69 @@ function renderCode(id) {
   });
 }
 
+function renderCode(id) { _fillCodeEl(CODE[id] || '// No code snippet for this chapter.', HL[id] || []); }
+function renderCodeDirect(code, hlLines) { _fillCodeEl(code, hlLines); }
+
+function makeCodeTabs(tabs) {
+  // tabs: [{label, code, hlLines}]
+  const wrap = document.getElementById('code-wrap');
+  const existing = document.getElementById('code-tab-bar');
+  if (existing) existing.remove();
+  const bar = document.createElement('div');
+  bar.id = 'code-tab-bar';
+  bar.style.cssText = 'display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--surface-2,#161b22);padding:0 12px;';
+  let active = 0;
+  function activate(i) {
+    active = i;
+    bar.querySelectorAll('button').forEach((b,j) => b.classList.toggle('active', j===i));
+    renderCodeDirect(tabs[i].code, tabs[i].hlLines || []);
+  }
+  tabs.forEach((tab, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = tab.label;
+    btn.onclick = () => activate(i);
+    bar.appendChild(btn);
+  });
+  wrap.insertBefore(bar, document.getElementById('code-body'));
+  activate(0);
+  return { activate, getActive: () => active, tabCount: tabs.length };
+}
+
 /* ═══════════════════════════════════════════════════════════
    CHAPTER 0 — What is RabbitMQ?
 ═══════════════════════════════════════════════════════════ */
 function ch0(da, ca){
+  document.getElementById('ch-brief').textContent =
+    'RabbitMQ is a message broker — a server that sits between your services and handles message delivery ' +
+    'so they never call each other directly. Producers publish messages; consumers receive them; ' +
+    'RabbitMQ takes care of routing, buffering, and delivery guarantees in between. ' +
+    'By the end of this tutorial you will understand how exchanges, queues, and bindings work together, ' +
+    'how to handle failures with ACK/NACK and dead-letter queues, and how to scale consumers with prefetch.';
+
+  document.getElementById('ch-note').textContent =
+    'Protocol note — RabbitMQ supports two wire protocols: AMQP 0-9-1 (the original, broker-native protocol ' +
+    'that defines exchanges, queues, and bindings) and AMQP 1.0 (the ISO standard, broker-agnostic transport used ' +
+    'across Azure Service Bus, ActiveMQ, and others). This tutorial uses AMQP 0-9-1 via the RabbitMQ.Client ' +
+    'NuGet package — the protocol RabbitMQ was built around, with full support for every feature covered here.';
+
   let mode = 'before';
 
   function draw(){
     da.innerHTML='';
+
+    // ── Toggle (inside da, above SVG — one unified component) ──
+    const ctrlRow = document.createElement('div');
+    ctrlRow.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;';
+    ctrlRow.innerHTML=`
+<div class="tog-group">
+  <button class="btn ${mode==='before'?'active':''}" id="b-before">⚠ Before (Tight Coupling)</button>
+  <button class="btn ${mode==='after'?'active':''}" id="b-after">✓ After (With Broker)</button>
+</div>
+<span class="ctrl-label">Toggle to see the architectural difference</span>`;
+    da.appendChild(ctrlRow);
+    document.getElementById('b-before').onclick=()=>{ mode='before'; draw(); };
+    document.getElementById('b-after').onclick=()=>{ mode='after'; draw(); };
+
     const svg = makeSVG(760,280);
     svg.setAttribute('height','280');
 
@@ -877,79 +1162,270 @@ function ch0(da, ca){
   }
 
   draw();
-
-  ca.innerHTML=`
-<div class="tog-group">
-  <button class="btn active" id="b-before">⚠ Before (Tight Coupling)</button>
-  <button class="btn" id="b-after">✓ After (With Broker)</button>
-</div>
-<span class="ctrl-label">Toggle to see the architectural difference</span>`;
-
-  document.getElementById('b-before').onclick=()=>{ mode='before'; document.getElementById('b-before').classList.add('active'); document.getElementById('b-after').classList.remove('active'); draw(); };
-  document.getElementById('b-after').onclick=()=>{ mode='after'; document.getElementById('b-after').classList.add('active'); document.getElementById('b-before').classList.remove('active'); draw(); };
+  ca.innerHTML='';
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHAPTER 1 — The Basics
+   CHAPTER 1 — The Broker
+═══════════════════════════════════════════════════════════ */
+function chBroker(da, ca){
+  document.getElementById('ch-brief').textContent =
+    'The broker is the server process that sits between your services. ' +
+    'Click each component below to learn what it does — then hit "Show Full Flow" ' +
+    'to watch a message travel through every layer.';
+
+  da.innerHTML=''; ca.innerHTML='';
+
+  // ── Controls ─────────────────────────────────────────────
+  const ctrlRow = document.createElement('div');
+  ctrlRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;';
+
+  const labels = ['Connection','Channel','Exchange','Binding','Queue'];
+  const colors  = ['#00d4ff','#a78bfa','#f59e0b','#22c55e','#4a7aaa'];
+  labels.forEach((lbl,i)=>{
+    const b = document.createElement('button');
+    b.className='btn'; b.textContent=lbl;
+    b.style.cssText=`border-color:${colors[i]};color:${colors[i]};`;
+    b.onclick=()=>highlight(i);
+    ctrlRow.appendChild(b);
+  });
+
+  const bFlow = document.createElement('button');
+  bFlow.className='btn btn-primary'; bFlow.id='b1b-flow'; bFlow.textContent='▶ Show Full Flow';
+  ctrlRow.appendChild(bFlow);
+  da.appendChild(ctrlRow);
+
+  // ── Info bar ──────────────────────────────────────────────
+  const info = document.createElement('div');
+  info.style.cssText='font-size:13px;color:var(--text-muted);min-height:20px;margin-bottom:12px;transition:color .2s;';
+  info.textContent='Click a component to learn what it does.';
+  da.appendChild(info);
+
+  // ── SVG ───────────────────────────────────────────────────
+  const W=760, H=220;
+  const svg = makeSVG(W,H); svg.setAttribute('height',String(H));
+
+  // Broker boundary
+  const brokerRect = svgEl('rect',{x:170,y:30,width:430,height:160,rx:12,
+    fill:'none',stroke:'#2d3748','stroke-width':'1.5','stroke-dasharray':'6 3'});
+  const brokerLbl = svgEl('text',{x:385,y:22,'text-anchor':'middle',
+    fill:'#4a5568','font-size':'10','font-family':'system-ui','letter-spacing':'0.06em'});
+  brokerLbl.textContent='RabbitMQ Broker'; svg.appendChild(brokerRect); svg.appendChild(brokerLbl);
+
+  // Producer
+  box(svg,10,86,110,48,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
+  // Exchange
+  box(svg,192,86,110,48,'Exchange',null,{stroke:'#f59e0b',fill:'#211a0a',tc:'#fde68a'});
+  // Queue
+  queue(svg,382,86,'"orders"');
+  // Consumer
+  box(svg,640,86,110,48,'Consumer',null,{stroke:'#22c55e',fill:'#0f1e0f'});
+
+  // Arrows
+  const connArrow = arrow(svg,120,110,190,110,{col:'cyan'});
+  const chanArrow = arrow(svg,302,110,380,110,{col:'amber'});
+  const bindArrow = arrow(svg,478,110,558,110,{col:'green'});
+  arrow(svg,558,110,638,110,{col:'muted'});
+
+  // Channel label on the TCP arrow
+  const chanLbl = svgEl('text',{x:155,y:103,'text-anchor':'middle',
+    fill:'#00d4ff','font-size':'9','font-family':'system-ui'});
+  chanLbl.textContent='TCP'; svg.appendChild(chanLbl);
+
+  const vchLbl = svgEl('text',{x:341,y:103,'text-anchor':'middle',
+    fill:'#a78bfa','font-size':'9','font-family':'system-ui'});
+  vchLbl.textContent='Channel'; svg.appendChild(vchLbl);
+
+  const bindLbl = svgEl('text',{x:518,y:103,'text-anchor':'middle',
+    fill:'#22c55e','font-size':'9','font-family':'system-ui'});
+  bindLbl.textContent='Binding'; svg.appendChild(bindLbl);
+
+  da.appendChild(svg);
+
+  const INFOS = [
+    'Connection — one long-lived TCP socket shared across the whole process. Expensive to open; keep one alive and reuse it.',
+    'Channel — a lightweight virtual link multiplexed over the Connection. Create one per thread or Task; channels are not thread-safe.',
+    'Exchange — receives published messages and decides which queues they go to, based on type (Direct / Topic / Fanout) and bindings.',
+    'Binding — a routing rule that links an Exchange to a Queue. A topic binding can include wildcards (* / #) to match routing keys.',
+    'Queue — a durable FIFO buffer that holds messages until a Consumer is ready. Declare it durable + use persistent delivery to survive restarts.',
+  ];
+
+  function highlight(idx){
+    info.textContent = INFOS[idx];
+    info.style.color = colors[idx];
+    // reset broker rect stroke
+    brokerRect.setAttribute('stroke','#2d3748');
+    if(idx===0) brokerRect.setAttribute('stroke','#00d4ff');
+    if(idx===1) vchLbl.setAttribute('fill','#e9d5ff');
+    else        vchLbl.setAttribute('fill','#a78bfa');
+  }
+
+  // ── Full-flow animation ───────────────────────────────────
+  let busy=false;
+  bFlow.onclick = async ()=>{
+    if(busy) return; busy=true;
+    const restore = animCtrl(bFlow);
+    info.style.color=''; info.textContent='';
+
+    const setInfo=(txt,col)=>{ info.textContent=txt; info.style.color=col; };
+
+    // Step 1 — Producer → broker (TCP connection)
+    setInfo('1. Producer opens a TCP Connection to the broker…', '#00d4ff');
+    brokerRect.setAttribute('stroke','#00d4ff');
+    await new Promise(r=>dot(svg,[[120,110],[192,110]],{col:'#00d4ff',dur:1000,onDone(d){rm(d);r();}}));
+    await wait(500);
+
+    // Step 2 — Channel established inside connection
+    setInfo('2. A Channel is created inside the Connection…', '#a78bfa');
+    brokerRect.setAttribute('stroke','#a78bfa');
+    await wait(600);
+
+    // Step 3 — Producer → Exchange (message publish)
+    setInfo('3. Message is published to the Exchange…', '#f59e0b');
+    brokerRect.setAttribute('stroke','#f59e0b');
+    await new Promise(r=>dot(svg,[[192,110],[302,110]],{col:'#f59e0b',dur:1000,onDone(d){rm(d);r();}}));
+    await wait(400);
+
+    // Step 4 — Exchange → Queue (binding routes message)
+    setInfo('4. Exchange routes it to the Queue via the Binding…', '#22c55e');
+    brokerRect.setAttribute('stroke','#22c55e');
+    await new Promise(r=>dot(svg,[[302,110],[478,110]],{col:'#22c55e',dur:1000,
+      onArrive(d){ flash(svg,478,110,'#22c55e'); setTimeout(()=>rm(d),180); },
+      onDone:r}));
+    await wait(500);
+
+    // Step 5 — Queue → Consumer (delivery)
+    setInfo('5. Consumer receives the message from the Queue.', '#4aaa4a');
+    brokerRect.setAttribute('stroke','#4a7aaa');
+    await new Promise(r=>dot(svg,[[560,110],[640,110]],{col:'#4aaa4a',dur:1000,
+      onArrive(d){ flash(svg,640,110,'#4aaa4a'); setTimeout(()=>rm(d),180); },
+      onDone:r}));
+
+    brokerRect.setAttribute('stroke','#2d3748');
+    info.style.color='var(--text-muted)';
+    info.textContent='Full flow complete. Click a component to explore it individually.';
+    restore(); busy=false;
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 2 — The Basics
 ═══════════════════════════════════════════════════════════ */
 function ch1(da, ca){
   let outcome='ack', busy=false;
-  da.innerHTML='';
+  da.innerHTML=''; ca.innerHTML='';
+
+  document.getElementById('ch-brief').textContent = 'Covers the core RabbitMQ flow: a Producer publishes a message to an Exchange, which routes it into a Queue, and a Consumer picks it up. ' +
+    'Use the controls below to see how the Consumer acknowledges (ACK) successful processing or requeues (NACK) a failed message. ' +
+    'Important: RabbitMQ guarantees at-least-once delivery — if a consumer crashes before ACKing, the message is redelivered. ' +
+    'This means your consumer logic must be idempotent: safe to run twice on the same message.';
+
+  // ── Controls rendered ABOVE the diagram ──────────────────
+  const ctrlRow = document.createElement('div');
+  ctrlRow.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;';
+  ctrlRow.innerHTML=`
+<button class="btn btn-primary" id="b1-send">▶ Send Message</button>
+<span style="color:var(--text-muted);font-size:12px;margin:0 4px;">Outcome:</span>
+<div class="tog-group">
+  <button class="btn active" id="b1-ack">✓ ACK (success)</button>
+  <button class="btn" id="b1-nack">↩ NACK (requeue)</button>
+</div>`;
+  da.appendChild(ctrlRow);
+
+  // ── Description bar ───────────────────────────────────────
+  const desc = document.createElement('div');
+  desc.style.cssText = 'font-size:13px;color:var(--text-muted);min-height:20px;margin-bottom:12px;transition:color 0.2s;';
+  desc.textContent = 'Click "Send Message" to animate the full message lifecycle.';
+  da.appendChild(desc);
+
+  // ── Diagram ───────────────────────────────────────────────
   const svg = makeSVG(760,200); svg.setAttribute('height','200');
 
   box(svg,20,76,110,48,'Producer',null,{stroke:'#4a7aaa',fill:'#1a2035'});
   box(svg,200,76,110,48,'Exchange','(default "")',{stroke:'#7a5aaa',fill:'#20182a',tc:'#c0a8e8'});
-  const q = queue(svg,380,76,'"orders"');
+  queue(svg,380,76,'"orders"');
   box(svg,560,76,120,48,'Consumer',null,{stroke:'#4aaa4a',fill:'#182018'});
 
   arrow(svg,130,100,198,100,{col:'muted'});
   arrow(svg,310,100,378,100,{col:'muted'});
   arrow(svg,496,100,558,100,{col:'muted'});
   txt(svg,380,185,'Messages are buffered in the queue until the consumer is ready',{col:'#4a5568',size:10});
+  da.appendChild(svg);
+
+  // ── Code tabs ─────────────────────────────────────────────
+  const tabs = makeCodeTabs([
+    { label: 'Producer',        code: CODE['1-producer'],      hlLines: [9,10,12,13] },
+    { label: 'Consumer (ACK)',  code: CODE['1-consumer-ack'],  hlLines: [10,11] },
+    { label: 'Consumer (NACK)', code: CODE['1-consumer-nack'], hlLines: [10,11,12] },
+  ]);
+
+  function setDesc(msg, col='var(--text-muted)'){
+    desc.textContent = msg;
+    desc.style.color = col;
+  }
+
+  function setOutcome(val) {
+    outcome = val;
+    const isAck = val === 'ack';
+    document.getElementById('b1-ack').classList.toggle('active', isAck);
+    document.getElementById('b1-nack').classList.toggle('active', !isAck);
+    // Switch to the matching consumer tab
+    tabs.activate(isAck ? 1 : 2);
+  }
 
   async function send(){
     if(busy) return; busy=true;
-    document.getElementById('b1-send').disabled=true;
+    const restore1 = animCtrl(document.getElementById('b1-send'));
 
-    await new Promise(r=>dot(svg,[[75,100],[255,100]],{dur:550,onDone(d){rm(d);r();}}));
-    await new Promise(r=>dot(svg,[[255,100],[437,100]],{dur:550,onDone(d){rm(d);r();}}));
-    await wait(250);
+    // Step 1 — show Producer tab while dot travels to exchange
+    tabs.activate(0);
+    setDesc('📤 Producer serializes the order to JSON and publishes it to the exchange.');
+    await new Promise(r=>dot(svg,[[75,100],[255,100]],{dur:900,onDone(d){rm(d);r();}}));
+    await wait(400);
 
+    // Step 2 — exchange to queue
+    setDesc('🔀 Exchange routes the message to the "orders" queue using the routing key.');
+    await new Promise(r=>dot(svg,[[255,100],[437,100]],{dur:900,onDone(d){rm(d);r();}}));
+    await wait(500);
+
+    // Step 3 — switch to consumer tab, then animate delivery
+    tabs.activate(outcome === 'ack' ? 1 : 2);
     if(outcome==='ack'){
-      await new Promise(r=>dot(svg,[[437,100],[620,100]],{dur:650,
+      setDesc('⚙️ Consumer receives the message and processes it…');
+      await new Promise(r=>dot(svg,[[437,100],[620,100]],{dur:1000,
         onArrive(d){ flash(svg,620,100,'#22c55e'); setTimeout(()=>rm(d),180); },
         onDone:r}));
+      await wait(300);
+      setDesc('✅ Consumer sent ACK — RabbitMQ permanently removes the message from the queue.','#22c55e');
     } else {
-      await new Promise(r=>dot(svg,[[437,100],[620,100]],{dur:650,
+      setDesc('⚙️ Consumer receives the message but cannot process it…');
+      await new Promise(r=>dot(svg,[[437,100],[620,100]],{dur:1000,
         onArrive(d){
           d.setAttribute('fill','#f59e0b');
+          setDesc('↩ Consumer sent NACK (requeue=true) — message bounces back to the queue for retry.','#f59e0b');
           setTimeout(()=>{
-            dot(svg,[[620,100],[437,100]],{col:'#f59e0b',dur:500,
+            dot(svg,[[620,100],[437,100]],{col:'#f59e0b',dur:800,
               onArrive(d2){ flash(svg,437,100,'#f59e0b'); setTimeout(()=>rm(d2),180); },
               onDone:r});
             rm(d);
-          },350);
+          },500);
         }
       }));
+      await wait(400);
+      setDesc('⚠️ Message is requeued — another consumer (or the same one) will attempt it again.','#f59e0b');
     }
-    await wait(300);
-    busy=false; document.getElementById('b1-send').disabled=false;
+    await wait(1800);
+    setDesc('Click "Send Message" to animate again. Toggle the outcome to see ACK vs NACK.');
+    busy=false; restore1();
   }
 
-  ca.innerHTML=`
-<button class="btn btn-primary" id="b1-send">▶ Send Message</button>
-<div class="tog-group">
-  <button class="btn active" id="b1-ack">✓ ACK (success)</button>
-  <button class="btn" id="b1-nack">↩ NACK (requeue)</button>
-</div>`;
-
   document.getElementById('b1-send').onclick=send;
-  document.getElementById('b1-ack').onclick=()=>{ outcome='ack'; document.getElementById('b1-ack').classList.add('active'); document.getElementById('b1-nack').classList.remove('active'); };
-  document.getElementById('b1-nack').onclick=()=>{ outcome='nack'; document.getElementById('b1-nack').classList.add('active'); document.getElementById('b1-ack').classList.remove('active'); };
+  document.getElementById('b1-ack').onclick=()=>setOutcome('ack');
+  document.getElementById('b1-nack').onclick=()=>setOutcome('nack');
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHAPTER 2 — Exchanges
+   CHAPTER 3 — Exchanges
 ═══════════════════════════════════════════════════════════ */
 function ch2(da, ca){
   let tab='direct', busy=false;
@@ -958,22 +1434,74 @@ function ch2(da, ca){
     direct: {
       exLabel:'Direct Exchange', exSub:'type: direct',
       qs:[{y:62,label:'"payments"',key:'payment'},{y:132,label:'"orders"',key:'order'}],
-      footer:'Routes to the queue whose binding key exactly matches the message routing key',
-      animTargets:[{qi:1,x:530+57,y:132+24}],
+      animTargets:[{x:530+57,y:132+24}],
+      brief:'A Direct exchange routes each message to the queue whose binding key exactly matches the routing key. Best when each message type maps to one queue — e.g. "payment" always goes to payments. If no queue matches, the message is silently dropped.',
+      code:`// Declare a direct exchange
+await channel.ExchangeDeclareAsync(
+    "payments", ExchangeType.Direct, durable: true);
+
+// Bind queues — each with its own exact key
+await channel.QueueBindAsync("payments", "payments", routingKey: "payment");
+await channel.QueueBindAsync("orders",   "payments", routingKey: "order");
+
+// Publish — only the "payments" queue receives this message
+await channel.BasicPublishAsync(
+    exchange: "payments",
+    routingKey: "payment",
+    body: body);`,
+      hl:[2,3,6,7,10,11,12,13],
     },
     topic: {
       exLabel:'Topic Exchange', exSub:'type: topic',
       qs:[{y:40,label:'"orders.high"',pat:'orders.*.high'},{y:108,label:'"orders.eu"',pat:'orders.europe.#'},{y:176,label:'"all.orders"',pat:'#'}],
-      footer:'Wildcards: * = one word  ·  # = zero or more words',
-      animTargets:[{qi:0,x:530+57,y:40+24},{qi:1,x:530+57,y:108+24}],
+      animTargets:[{x:530+57,y:40+24},{x:530+57,y:108+24}],
+      brief:'A Topic exchange matches routing keys against dot-separated patterns. * = one word, # = zero or more words. One message can match multiple queues simultaneously — e.g. "orders.europe.high" hits both "orders.*.high" and "orders.europe.#", so both queues receive a copy. Best when routing rules evolve or consumers need overlapping subsets. Unmatched messages are silently dropped.',
+      code:`// Declare a topic exchange
+await channel.ExchangeDeclareAsync(
+    "orders.topic", ExchangeType.Topic, durable: true);
+
+// * = exactly one word  |  # = zero or more words
+await channel.QueueBindAsync("orders.high", "orders.topic", "orders.*.high");
+await channel.QueueBindAsync("orders.eu",   "orders.topic", "orders.europe.#");
+await channel.QueueBindAsync("all.orders",  "orders.topic", "#");
+
+// "orders.europe.high" matches the first two queues → delivered twice
+await channel.BasicPublishAsync(
+    exchange: "orders.topic",
+    routingKey: "orders.europe.high",
+    body: body);`,
+      hl:[2,3,6,7,8,9,12,13,14],
     },
     fanout: {
       exLabel:'Fanout Exchange', exSub:'type: fanout',
       qs:[{y:44,label:'"email-svc"'},{y:112,label:'"analytics"'},{y:180,label:'"warehouse"'}],
-      footer:'Fanout: copies message to every bound queue — routing key is completely ignored',
-      animTargets:[{qi:0,x:530+57,y:44+24},{qi:1,x:530+57,y:112+24},{qi:2,x:530+57,y:180+24}],
+      animTargets:[{x:530+57,y:44+24},{x:530+57,y:112+24},{x:530+57,y:180+24}],
+      brief:'A Fanout exchange ignores the routing key entirely and delivers every message to all bound queues simultaneously. Best for broadcast scenarios — notifications, cache invalidation, audit logging — where every subscriber must receive every message. Unlike Topic, there is no routing logic: bind a queue and it gets everything.',
+      code:`// Declare a fanout exchange
+await channel.ExchangeDeclareAsync(
+    "notifications", ExchangeType.Fanout, durable: true);
+
+// Routing key is ignored — bind with an empty string
+await channel.QueueBindAsync("email-svc",  "notifications", routingKey: "");
+await channel.QueueBindAsync("analytics",  "notifications", routingKey: "");
+await channel.QueueBindAsync("warehouse",  "notifications", routingKey: "");
+
+// Every bound queue receives this message regardless of routing key
+await channel.BasicPublishAsync(
+    exchange: "notifications",
+    routingKey: "",   // ignored by fanout
+    body: body);`,
+      hl:[2,3,6,7,8,9,12,13,14],
     }
   };
+
+  function setTabUI(type){
+    const cfg = configs[type];
+    // brief outside animation box
+    document.getElementById('ch-brief').textContent = cfg.brief;
+    // code panel
+    renderCodeDirect(cfg.code, cfg.hl);
+  }
 
   function draw(type){
     da.innerHTML='';
@@ -986,7 +1514,7 @@ function ch2(da, ca){
       const d=document.createElement('div');
       d.className='sub-tab'+(t===type?' active':'');
       d.textContent=t.charAt(0).toUpperCase()+t.slice(1);
-      d.onclick=()=>{ tab=t; draw(t); bindBtn(); };
+      d.onclick=()=>{ tab=t; draw(t); bindBtn(); setTabUI(t); };
       tabBar.appendChild(d);
     });
     da.appendChild(tabBar);
@@ -998,19 +1526,18 @@ function ch2(da, ca){
     arrow(svg,120,H/2,280,H/2,{col:'muted'});
     box(svg,280,H/2-23,150,46,cfg.exLabel,cfg.exSub,{stroke:'#00d4ff',fill:'#0f2030',tc:'#00d4ff'});
 
-    cfg.qs.forEach((q2,i)=>{
-      const qr = queue(svg,530,q2.y,q2.label);
+    cfg.qs.forEach((q2)=>{
+      queue(svg,530,q2.y,q2.label);
       arrow(svg,430,H/2, 530,q2.y+24, {col:'muted'});
       if(q2.key) txt(svg,514,q2.y+10,q2.key,{col:'#7a5aaa',size:9,mono:true,anchor:'end'});
       if(q2.pat) txt(svg,524,q2.y+8,q2.pat,{col:'#7a5aaa',size:9,mono:true,anchor:'end'});
     });
 
-    txt(svg,380,H-10,cfg.footer,{col:'#4a5568',size:10});
     da.appendChild(svg);
-    return svg;
   }
 
-  let curSVG = draw('direct');
+  draw('direct');
+  setTabUI('direct');
 
   function bindBtn(){
     const btn = document.getElementById('b2-anim');
@@ -1020,10 +1547,11 @@ function ch2(da, ca){
 
   async function animate(){
     if(busy) return; busy=true;
-    const btn=document.getElementById('b2-anim'); if(btn) btn.disabled=true;
+    const btn=document.getElementById('b2-anim'); if(!btn){ busy=false; return; }
+    const restore2=animCtrl(btn);
     const cfg=configs[tab];
     const svg=da.querySelector('svg');
-    if(!svg){ busy=false; return; }
+    if(!svg){ busy=false; restore2(); return; }
     const H=parseInt(svg.getAttribute('height'));
     const exRX=430;
 
@@ -1034,7 +1562,7 @@ function ch2(da, ca){
       targets.forEach(([tx,ty])=>{
         dot(svg,[[430,H/2],[tx,ty]],{dur:520,
           onArrive(d){ flash(svg,tx,ty,'#00d4ff'); setTimeout(()=>rm(d),180); },
-          onDone(){ done++; if(done===targets.length){ busy=false; if(btn) btn.disabled=false; } }
+          onDone(){ done++; if(done===targets.length){ busy=false; restore2(); } }
         });
       });
     } else {
@@ -1049,7 +1577,7 @@ function ch2(da, ca){
           onArrive(d){ flash(svg,t2.x,t2.y,'#00d4ff'); setTimeout(()=>rm(d),180); },
           onDone:r}));
       }
-      busy=false; if(btn) btn.disabled=false;
+      busy=false; restore2();
     }
   }
 
@@ -1059,9 +1587,15 @@ function ch2(da, ca){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHAPTER 3 — Routing Keys
+   CHAPTER 4 — Routing Keys
 ═══════════════════════════════════════════════════════════ */
 function ch3(da, ca){
+  document.getElementById('ch-brief').textContent =
+    'A routing key is a plain dot-separated string attached to every published message — e.g. "orders.europe.high". ' +
+    'Topic exchanges match it against binding patterns: * matches exactly one word segment, # matches zero or more. ' +
+    'Segments are the parts between dots; matching is case-sensitive; hyphens and underscores are valid inside a segment. ' +
+    'Type a routing key below to see which patterns match in real time.';
+
   da.innerHTML='';
   const svg = makeSVG(760,270); svg.setAttribute('height','270');
 
@@ -1072,7 +1606,7 @@ function ch3(da, ca){
       matches: k => k==='orders' || k.startsWith('orders.') },
     { id:'p2', pat:'orders.europe.#', label:'"orders.europe"',qy:158,
       matches: k => k==='orders.europe' || k.startsWith('orders.europe.') },
-    { id:'p3', pat:'orders.*.high',   label:'"orders.hi-pri"',qy:216,
+    { id:'p3', pat:'orders.*.high',   label:'"orders.high-priority"',qy:216,
       matches: k => { const p=k.split('.'); return p.length===3 && p[0]==='orders' && p[2]==='high'; } },
   ];
 
@@ -1111,10 +1645,16 @@ function ch3(da, ca){
   }
 
   ca.innerHTML=`
-<div class="rk-wrap">
+<p style="flex:0 0 100%;font-size:13px;color:var(--text-muted);margin:0 0 10px;">
+  Try changing the routing key below to see which queue patterns match.
+  Use <code style="font-size:11px;background:var(--surface-2,#161b22);padding:1px 5px;border-radius:3px;">orders.europe.high</code>,
+  <code style="font-size:11px;background:var(--surface-2,#161b22);padding:1px 5px;border-radius:3px;">orders.us.low</code>,
+  or any <code style="font-size:11px;background:var(--surface-2,#161b22);padding:1px 5px;border-radius:3px;">orders.&lt;region&gt;.&lt;priority&gt;</code> combination.
+</p>
+<div class="rk-wrap" style="flex:0 0 100%;">
   <span class="ctrl-label">Routing key:</span>
   <input class="rk-input" id="rk-in" placeholder="e.g. orders.europe.high" value="orders.europe.high" aria-label="Routing key to test"/>
-  <span id="match-out"></span>
+  <span id="match-out" style="min-width:200px;"></span>
 </div>`;
   const inp=document.getElementById('rk-in');
   inp.addEventListener('input',()=>update(inp.value.trim()));
@@ -1122,14 +1662,27 @@ function ch3(da, ca){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHAPTER 4 — Multiple Consumers
+   CHAPTER 5 — Multiple Consumers
 ═══════════════════════════════════════════════════════════ */
 function ch4(da, ca){
+  document.getElementById('ch-brief').textContent =
+    'Competing consumers: multiple consumers share one queue — each message goes to exactly one of them, not all. ' +
+    'This is different from fanout, where every consumer gets a copy. ' +
+    'prefetchCount=1 ensures fair dispatch: a consumer only receives a new message after ACKing the previous one, ' +
+    'preventing a slow consumer from blocking others. ' +
+    'Note: with competing consumers, processing order is not guaranteed — Consumer 2 may finish before Consumer 1.';
+
   let busy=false;
   da.innerHTML='';
   const svg = makeSVG(760,240); svg.setAttribute('height','240');
 
   queue(svg,60,96,'"orders"');
+
+  // Pending count label next to the queue
+  const qPending = svgEl('text',{x:118,y:85,'text-anchor':'middle',
+    fill:'#f59e0b','font-size':'10','font-family':'monospace',opacity:'0'});
+  svg.appendChild(qPending);
+
   const CONS=[{x:510,y:40},{x:510,y:110},{x:510,y:180}];
   const badgeEls=[];
 
@@ -1140,51 +1693,87 @@ function ch4(da, ca){
     b.textContent='idle'; svg.appendChild(b); badgeEls.push(b);
   });
 
-  txt(svg,300,232,'prefetchCount=1 → at most 1 in-flight message per consumer; round-robin dispatch',{col:'#4a5568',size:10});
+  txt(svg,300,232,'prefetchCount=1 → consumer must ACK before RabbitMQ delivers the next message',{col:'#4a5568',size:10});
   da.appendChild(svg);
+
+  function setBadge(ci, text, col, opacity=1){
+    badgeEls[ci].textContent=text;
+    badgeEls[ci].setAttribute('fill', col);
+    badgeEls[ci].setAttribute('opacity', String(opacity));
+  }
+  function setPending(n){
+    if(n>0){ qPending.textContent=`${n} waiting`; qPending.setAttribute('opacity','1'); }
+    else   { qPending.setAttribute('opacity','0'); }
+  }
+
+  async function dispatch(ci){
+    const c=CONS[ci];
+    await new Promise(r=>dot(svg,[[176,120],[c.x,c.y+23]],{dur:1000,
+      onArrive(d){ flash(svg,c.x,c.y+23,'#00d4ff'); setTimeout(()=>rm(d),180); },
+      onDone:r}));
+    setBadge(ci,'busy ●','#f59e0b');
+  }
+
+  async function ackConsumer(ci){
+    const c=CONS[ci];
+    flash(svg,c.x,c.y+23,'#22c55e');
+    setBadge(ci,'✓ acked','#22c55e');
+    await wait(700);
+    setBadge(ci,'idle','#00d4ff',0.5);
+  }
 
   async function runBatch(){
     if(busy) return; busy=true;
-    document.getElementById('b4-batch').disabled=true;
-    const counts=[0,0,0];
-    badgeEls.forEach(b=>{ b.textContent='idle'; b.setAttribute('opacity','0.5'); });
+    const restore4=animCtrl(document.getElementById('b4-batch'));
 
-    for(let i=0;i<6;i++){
-      const ci=i%3, c=CONS[ci];
-      await new Promise(r=>dot(svg,[[118,120],[c.x,c.y+23]],{dur:500,
-        onArrive(d){
-          counts[ci]++;
-          badgeEls[ci].textContent=`${counts[ci]} msg`;
-          badgeEls[ci].setAttribute('opacity','1');
-          flash(svg,c.x,c.y+23,'#00d4ff');
-          setTimeout(()=>{ rm(d); r(); },REDUCED?5:160);
-        }
-      }));
-      await wait(80);
-    }
+    // Reset
+    CONS.forEach((_,i)=>setBadge(i,'idle','#00d4ff',0.5));
+    setPending(0);
 
-    await wait(500);
+    // Round 1 — dispatch 1 msg to each consumer in parallel
+    // (RabbitMQ can give each consumer 1 msg since all slots are free)
+    setPending(3); // 3 more waiting after these
+    await Promise.all(CONS.map((_,i)=>dispatch(i)));
+    // All 3 consumers now busy — prefetch=1 means queue holds remaining msgs
+    await wait(1000);
+
+    // Round 2 — each consumer ACKs, then immediately gets the next message.
+    // Done sequentially so the viewer can follow each ACK → dispatch pair.
     for(let i=0;i<3;i++){
-      flash(svg,CONS[i].x,CONS[i].y+23,'#22c55e');
-      badgeEls[i].textContent='✓ ack';
-      badgeEls[i].setAttribute('fill','#22c55e');
-      await wait(130);
+      await ackConsumer(i);
+      setPending(2-i);
+      await wait(300);
+      await dispatch(i);      // slot opened → RabbitMQ delivers the held message
+      await wait(500);
     }
-    await wait(400);
-    badgeEls.forEach(b=>{ b.textContent='idle'; b.setAttribute('fill','#00d4ff'); b.setAttribute('opacity','0.5'); });
-    busy=false; document.getElementById('b4-batch').disabled=false;
+
+    // Final ACKs
+    await wait(700);
+    for(let i=0;i<3;i++){
+      await ackConsumer(i);
+      await wait(250);
+    }
+    setPending(0);
+    busy=false; restore4();
   }
 
   ca.innerHTML=`
 <button class="btn btn-primary" id="b4-batch">▶ Send 6 Messages</button>
-<span class="ctrl-label">Watch round-robin distribution across 3 consumers</span>`;
+<span class="ctrl-label">Each consumer holds at most 1 unACKed message at a time</span>`;
   document.getElementById('b4-batch').onclick=runBatch;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHAPTER 5 — Failure Handling
+   CHAPTER 6 — Failure Handling
 ═══════════════════════════════════════════════════════════ */
 function ch5(da, ca){
+  document.getElementById('ch-brief').textContent =
+    'Messages fail for two reasons: transient (network blip, temporary unavailability — retry makes sense) ' +
+    'and deterministic (malformed data, logic error — retrying forever is harmful). ' +
+    'NACK + requeue:true is for transient failures only. ' +
+    'For deterministic failures, NACK + requeue:false routes the message to the Dead Letter Exchange instead. ' +
+    'Also: if a consumer disconnects while holding unACKed messages, RabbitMQ automatically requeues them for another consumer.';
+
   let busy=false;
   da.innerHTML='';
   const svg = makeSVG(760,220); svg.setAttribute('height','220');
@@ -1211,15 +1800,23 @@ function ch5(da, ca){
     return new Promise(r=>dot(svg,[[224,109],[420,109]],{dur:550,onArrive(d){r(d);}}));
   }
 
+  function allBtns(){ return ['b5-ok','b5-rq','b5-dl','b5-to'].map(id=>document.getElementById(id)).filter(Boolean); }
+  function disableOthers(self){ allBtns().forEach(b=>{ if(b!==self) b.disabled=true; }); }
+  function enableAll(){ allBtns().forEach(b=>{ b.disabled=false; }); }
+
   async function doOK(){
     if(busy)return; busy=true;
+    const btn=document.getElementById('b5-ok');
+    disableOthers(btn); const restore=animCtrl(btn);
     const d=await sendAndArrive();
     flash(svg,420,109,'#22c55e'); rm(d); await wait(300);
-    busy=false;
+    busy=false; restore(); enableAll();
   }
 
   async function doNackRQ(){
     if(busy)return; busy=true;
+    const btn=document.getElementById('b5-rq');
+    disableOthers(btn); const restore=animCtrl(btn);
     const d=await sendAndArrive();
     d.setAttribute('fill','#f59e0b');
     await wait(300);
@@ -1231,29 +1828,32 @@ function ch5(da, ca){
         setTimeout(()=>{ rm(d2); r(); },200);
       }}));
     await wait(1800); rdel.setAttribute('opacity','0');
-    busy=false;
+    busy=false; restore(); enableAll();
   }
 
   async function doNackDL(){
     if(busy)return; busy=true;
+    const btn=document.getElementById('b5-dl');
+    disableOthers(btn); const restore=animCtrl(btn);
     const d=await sendAndArrive();
     d.setAttribute('fill','#ef4444');
     await wait(300); rm(d);
     await new Promise(r=>dot(svg,[[420,109],[620,109]],{col:'#ef4444',dur:520,
       onArrive(d2){ flash(svg,620,109,'#ef4444'); setTimeout(()=>{ rm(d2); r(); },200); }}));
-    busy=false;
+    busy=false; restore(); enableAll();
   }
 
   async function doTimeout(){
     if(busy)return; busy=true;
+    const btn=document.getElementById('b5-to');
+    disableOthers(btn); const restore=animCtrl(btn);
     const d=await sendAndArrive();
-    // timer badge
     const timer=svgEl('text',{x:420,y:76,'text-anchor':'middle',fill:'#f59e0b','font-size':'10','font-family':'monospace'});
     timer.textContent='⏱ consumer_timeout…'; svg.appendChild(timer);
     await wait(1400); rm(timer); rm(d);
     await new Promise(r=>dot(svg,[[420,109],[620,109]],{col:'#ef4444',dur:520,
       onArrive(d2){ flash(svg,620,109,'#ef4444'); setTimeout(()=>{ rm(d2); r(); },200); }}));
-    busy=false;
+    busy=false; restore(); enableAll();
   }
 
   ca.innerHTML=`
@@ -1269,9 +1869,26 @@ function ch5(da, ca){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHAPTER 6 — Dead Letter Queue
+   CHAPTER 7 — Dead Letter Queue
 ═══════════════════════════════════════════════════════════ */
 function ch6(da, ca){
+  document.getElementById('ch-brief').textContent =
+    'A Dead Letter Queue (DLQ) catches messages that cannot be processed. Three things trigger dead-lettering: ' +
+    '(1) NACK with requeue:false — consumer explicitly rejects the message; ' +
+    '(2) message TTL expiry — the message sat in the queue longer than its time-to-live; ' +
+    '(3) queue length limit exceeded — the queue is full and the oldest message is evicted. ' +
+    'The message is re-published to a Dead Letter Exchange (DLX), which routes it to the DLQ for inspection.';
+
+  document.getElementById('ch-note').innerHTML = `
+<div style="border-left:3px solid var(--border);padding-left:12px;">
+  <strong style="color:var(--text);font-size:13px;">What to do with DLQ messages</strong>
+  <ul style="margin:6px 0 0;padding-left:16px;font-size:13px;">
+    <li>Monitor the count — alert when it grows, it signals a systematic processing problem.</li>
+    <li>Inspect the messages to identify the root cause (bad data, schema mismatch, missing dependency).</li>
+    <li>Once fixed, replay by re-publishing from the DLQ back to the original exchange — or discard if no longer valid.</li>
+  </ul>
+</div>`;
+
   let busy=false, dlqN=0;
   da.innerHTML='';
   const svg = makeSVG(760,260); svg.setAttribute('height','260');
@@ -1308,7 +1925,8 @@ function ch6(da, ca){
 
   async function runFlow(){
     if(busy)return; busy=true;
-    const btn=document.getElementById('b6-run'); if(btn) btn.disabled=true;
+    const btn=document.getElementById('b6-run'); if(!btn){ busy=false; return; }
+    const restore6=animCtrl(btn);
 
     // 1 Producer → Exchange
     await new Promise(r=>dot(svg,[[100,124],[150,124]],{dur:400,onDone(d){rm(d);r();}}));
@@ -1337,7 +1955,7 @@ function ch6(da, ca){
         if(ba) ba.textContent=`DLQ: ${dlqN} message${dlqN!==1?'s':''}`;
       }}));
 
-    busy=false; if(btn) btn.disabled=false;
+    busy=false; restore6();
   }
 
   ca.innerHTML=`
@@ -1350,7 +1968,89 @@ function ch6(da, ca){
 /* ═══════════════════════════════════════════════════════════
    APP
 ═══════════════════════════════════════════════════════════ */
-const RENDERS = [ch0,ch1,ch2,ch3,ch4,ch5,ch6];
+/* ═══════════════════════════════════════════════════════════
+   CHAPTER 8 — What's Next
+═══════════════════════════════════════════════════════════ */
+function chNext(da, ca){
+  document.getElementById('ch-brief').textContent =
+    "You've covered the complete RabbitMQ fundamentals. " +
+    "The four topics below are the natural next step — each builds directly on what you've learned. " +
+    "Click any card to see its code in the panel below.";
+
+  da.innerHTML=''; ca.innerHTML='';
+
+  const TOPICS = [
+    {
+      key:'8-confirms',
+      title:'Publisher Confirms',
+      color:'#00d4ff',
+      body:'By default, BasicPublishAsync is fire-and-forget — if the broker crashes between receiving and writing the message to disk, it is lost with no indication to the producer. Publisher Confirms add a handshake: the broker ACKs or NACKs each message back to the producer, giving you guaranteed delivery on the publish side.',
+      when:'Use when message loss on publish is unacceptable — payment events, order submissions, audit records.',
+    },
+    {
+      key:'8-ttl',
+      title:'Message & Queue TTL',
+      color:'#f59e0b',
+      body:'Time-to-live lets you set an expiry on messages or entire queues. A message that outlives its TTL is dead-lettered (if a DLX is configured) or silently dropped. You can set TTL per-message via BasicProperties.Expiration, or per-queue via the x-message-ttl argument so it applies to everything in that queue.',
+      when:'Use for time-sensitive events (price ticks, session tokens, OTPs) that are worthless after a fixed window.',
+    },
+    {
+      key:'8-limits',
+      title:'Queue Length Limits',
+      color:'#a78bfa',
+      body:'Unbounded queues can exhaust broker memory when consumers fall behind. x-max-length caps the message count; x-max-length-bytes caps total size. When the limit is hit, the overflow behaviour kicks in: drop-head silently evicts the oldest message (pair with a DLX to catch evicted messages), or reject-publish refuses new publishes and returns them to the producer.',
+      when:'Use whenever a slow consumer or traffic spike could grow the queue without bound.',
+    },
+    {
+      key:'8-streams',
+      title:'Streams',
+      color:'#22c55e',
+      body:'Classic queues delete messages on ACK — only one consumer can read each message. Streams are a persistent, append-only log: messages are never deleted on ACK, and every consumer reads independently at its own offset. You can replay from "first", seek to a timestamp, or start from "next" (live tail). Added in RabbitMQ 3.9.',
+      when:'Use for event sourcing, audit logs, or when multiple independent consumers need the same messages without fanout overhead.',
+    },
+  ];
+
+  const grid = document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:14px;';
+
+  let activeTopic = null;
+
+  TOPICS.forEach(t=>{
+    const card = document.createElement('div');
+    card.style.cssText=`border:1px solid var(--border);border-top:3px solid ${t.color};border-radius:8px;padding:14px 16px;background:var(--surface);cursor:pointer;transition:border-color 0.15s;`;
+    card.innerHTML=`
+      <div style="font-size:13px;font-weight:700;color:${t.color};margin-bottom:6px;">${t.title}</div>
+      <p style="font-size:12.5px;line-height:1.6;color:var(--text-muted);margin:0 0 8px;">${t.body}</p>
+      <div style="font-size:11.5px;color:var(--text-muted);border-top:1px solid var(--border);padding-top:7px;">
+        <span style="color:${t.color};font-weight:600;">Use when:</span> ${t.when}
+      </div>`;
+    card.onmouseenter=()=>{ if(activeTopic!==t.key) card.style.borderColor=t.color; };
+    card.onmouseleave=()=>{ if(activeTopic!==t.key) card.style.cssText=`border:1px solid var(--border);border-top:3px solid ${t.color};border-radius:8px;padding:14px 16px;background:var(--surface);cursor:pointer;transition:border-color 0.15s;`; };
+    card.onclick=()=>{
+      activeTopic=t.key;
+      grid.querySelectorAll('div[data-topic]').forEach(c=>{ c.style.boxShadow='none'; });
+      card.style.boxShadow=`0 0 0 2px ${t.color}`;
+      renderCodeDirect(CODE[t.key]||'', []);
+    };
+    card.setAttribute('data-topic', t.key);
+    grid.appendChild(card);
+  });
+
+  da.appendChild(grid);
+
+  // Link to official docs below cards
+  const docsRow = document.createElement('div');
+  docsRow.style.cssText='margin-top:16px;display:flex;align-items:center;gap:12px;';
+  docsRow.innerHTML=`
+    <span style="font-size:13px;color:var(--text-muted);">Ready to go deeper?</span>
+    <a href="https://www.rabbitmq.com/docs" target="_blank" rel="noopener"
+       style="display:inline-block;padding:7px 14px;border-radius:6px;border:1px solid var(--cyan);color:var(--cyan);font-size:12px;font-weight:600;text-decoration:none;">
+      Official RabbitMQ Docs →
+    </a>`;
+  da.appendChild(docsRow);
+}
+
+const RENDERS = [ch0,chBroker,ch1,ch2,ch3,ch4,ch5,ch6,chNext];
 let cur = 0;
 
 function go(id){
@@ -1362,6 +2062,9 @@ function go(id){
   const da=document.getElementById('diagram-area');
   const ca=document.getElementById('controls');
   da.innerHTML=''; ca.innerHTML='';
+  document.getElementById('ch-brief').textContent='';
+  document.getElementById('ch-note').textContent='';
+  const oldTab=document.getElementById('code-tab-bar'); if(oldTab) oldTab.remove();
   RENDERS[id](da,ca);
   renderCode(id);
   document.getElementById('main').scrollTo({top:0,behavior:'smooth'});
@@ -1410,6 +2113,8 @@ document.addEventListener('keydown',e=>{
 
 // Init
 go(0);
+document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
+
 </body>
 </html>
