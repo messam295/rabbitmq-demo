@@ -357,9 +357,82 @@ pre.code-blk code { font-family: inherit; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Mobile top bar ─────────────────────────────────────── */
+#mobile-bar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 50;
+  align-items: center;
+  padding: 0 14px;
+  gap: 12px;
+}
+#mob-ham {
+  background: none; border: none;
+  color: var(--text); cursor: pointer;
+  padding: 6px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 5px;
+}
+#mob-ham span {
+  display: block; width: 22px; height: 2px;
+  background: currentColor; border-radius: 2px;
+}
+.mob-bar-title { font-size: 0.88rem; font-weight: 700; color: var(--cyan); }
+
+#sb-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 40;
+}
+#sb-overlay.open { display: block; }
+
+/* ── Mobile layout ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  #mobile-bar { display: flex; }
+  body { padding-top: 52px; }
+
+  #sidebar {
+    position: fixed;
+    top: 52px; left: 0;
+    height: calc(100vh - 52px);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 45;
+  }
+  #sidebar.open { transform: translateX(0); }
+
+  #main { padding: 20px 16px 40px; }
+  .ch-title { font-size: 1.25rem; }
+  .ch-sub   { font-size: 0.82rem; }
+
+  #diagram-area { overflow-x: auto; }
+  #diagram-area svg { width: auto !important; min-width: 580px; }
+
+  pre.code-blk { font-size: 0.72rem; padding: 14px 14px; }
+  .code-hl { margin-left: -14px; padding-left: 12px; margin-right: -14px; padding-right: 14px; }
+
+  #g-panel { width: 100%; }
+
+  .rk-input { min-width: 160px; }
+
+  #code-tab-bar { overflow-x: auto; flex-wrap: nowrap; }
+  #code-tab-bar button { white-space: nowrap; }
+}
 </style>
 </head>
 <body>
+
+<!-- MOBILE TOP BAR -->
+<div id="mobile-bar">
+  <button id="mob-ham" aria-label="Open navigation" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mob-bar-title">RabbitMQ .NET Tutorial</div>
+</div>
+<div id="sb-overlay"></div>
 
 <!-- SIDEBAR -->
 <nav id="sidebar" aria-label="Tutorial navigation">
@@ -2114,6 +2187,18 @@ document.addEventListener('keydown',e=>{
 // Init
 go(0);
 document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+// Mobile sidebar toggle
+(function(){
+  const ham = document.getElementById('mob-ham');
+  const overlay = document.getElementById('sb-overlay');
+  const sidebar = document.getElementById('sidebar');
+  function open()  { sidebar.classList.add('open'); overlay.classList.add('open'); ham.setAttribute('aria-expanded','true'); }
+  function close() { sidebar.classList.remove('open'); overlay.classList.remove('open'); ham.setAttribute('aria-expanded','false'); }
+  ham.addEventListener('click', () => sidebar.classList.contains('open') ? close() : open());
+  overlay.addEventListener('click', close);
+  document.getElementById('sb-nav').addEventListener('click', () => { if (window.innerWidth < 768) close(); });
+})();
 </script>
 
 </body>
